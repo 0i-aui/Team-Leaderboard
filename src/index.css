@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  background: #f6f7f9;
+  color: #111827;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.dark body, .dark {
+  background-color: #0a0d13;
+  color: #e5e9f0;
+}
+.dark body {
+  background: #0a0d13;
+}
+
+@layer components {
+  /* Solid surface for grouped content — the default container */
+  .surface {
+    @apply border transition-colors duration-200;
+    background: #ffffff;
+    border-color: #e5e7eb;
+  }
+  .dark .surface {
+    background: #11151d;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  /* Quiet rows: transparent until hovered */
+  .rowline {
+    @apply border-b transition-colors duration-150;
+    border-color: #e9ebef;
+  }
+  .dark .rowline {
+    border-color: rgba(255, 255, 255, 0.07);
+  }
+  .rowline:last-child {
+    border-bottom-color: transparent;
+  }
+  .row-hover:hover {
+    background: rgba(17, 24, 39, 0.025);
+  }
+  .dark .row-hover:hover {
+    background: rgba(255, 255, 255, 0.035);
+  }
+  .row-press {
+    @apply active:scale-[0.995] transition-transform duration-100;
+  }
+  /* Small-caps section labels */
+  .label-caps {
+    @apply text-[11px] font-semibold uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+  }
+  .dark .label-caps {
+    color: #8b93a3;
+  }
+  .btn-press {
+    @apply active:scale-95 transition-transform duration-150;
+  }
+  .num-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Subtle skeleton matching content layout */
+  .skeleton {
+    background: rgba(100, 116, 139, 0.14);
+    animation: skeleton-pulse 1.8s ease-in-out infinite;
+  }
+  .dark .skeleton {
+    background: rgba(148, 163, 184, 0.12);
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+/* Visible keyboard focus — single restrained ring */
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.22);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+mark {
+  background: rgba(99, 102, 241, 0.18);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+.dark mark {
+  background: rgba(129, 140, 248, 0.28);
+}
+
+/* Slim, theme-aware scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 8px;
+  border: 2.5px solid transparent;
+  background-clip: content-box;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.32);
+  border: 2.5px solid transparent;
+  background-clip: content-box;
+  border-radius: 8px;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
