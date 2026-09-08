@@ -84,6 +84,32 @@ body {
   50% { opacity: 1; }
 }
 
+/* Gentle mount entrance for states and sections (opacity + 8px rise) */
+@keyframes fade-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.enter {
+  animation: fade-slide-in 0.3s ease-out both;
+}
+
+/* Brief background wash when a row's rank actually changes.
+   Starts tinted, settles back to transparent — no lingering state. */
+@keyframes row-flash-up {
+  0% { background-color: rgba(16, 185, 129, 0.10); }
+  100% { background-color: transparent; }
+}
+@keyframes row-flash-down {
+  0% { background-color: rgba(244, 63, 94, 0.08); }
+  100% { background-color: transparent; }
+}
+.flash-up {
+  animation: row-flash-up 1.6s ease-out both;
+}
+.flash-down {
+  animation: row-flash-down 1.6s ease-out both;
+}
+
 /* Visible keyboard focus — single restrained ring */
 :where(a, button, input, select, [tabindex]):focus-visible {
   outline: 2px solid #6366f1;

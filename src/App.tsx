@@ -55,7 +55,7 @@ export default function App() {
   return (
     <div className="min-h-screen pb-10">
       <ScrollToTop />
-      <Header theme={theme} onToggleTheme={toggle} live={live} configured={configured} view={view} onViewChange={setView} />
+      <Header theme={theme} onToggleTheme={toggle} live={live} configured={configured} view={view} onViewChange={setView} people={people} />
 
       <main className="pt-5">
         <AnimatePresence mode="wait" initial={false}>

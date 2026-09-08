@@ -1,4 +1,4 @@
-# Team Leaderboard — Setup & Operations Guide (v2)
+# Team Leaderboard — Setup & Operations Guide (v3)
 
 Private, read-only public leaderboard. No login, no signup, no admin panel.
 You manage everything from the Supabase dashboard. The website only READS.
@@ -7,22 +7,24 @@ Architecture in one line:
 `points_history` is the append-only audit log (source of truth) ·
 `people.points_a / points_b` are cached totals ·
 `add_points()` RPC updates both atomically + validates the source fits the person ·
-RLS makes anon read-only · triggers cap the system at 20 people / 4 supervisors / 1 admin.
+RLS makes anon read-only · triggers cap the system at 20 people / 1 admin.
 
-Point labels are DERIVED from `(role, board)` — never stored, never duplicated:
+ONE leaderboard, all 20 people, ranked by Total Points. Roles are ADDITIVE
+marks stored in `people.roles` (empty = regular member) — never stored twice,
+never derived from names:
 
-| Person | points_a | points_b | Total |
+| Marks | points_a | points_b | Total |
 |---|---|---|---|
-| Ahmed Sameh (admin) | Members | Management | Members + Management |
-| Supervisors board (Eman, Basant, Abdel Rahman, Mohamed El Desouky) | Leaders | Admin | Leaders + Admin |
-| Everyone else (members board) | Supervisors | Admin | Supervisors + Admin |
+| ADMIN (Ahmed Sameh) | Members | Management | Members + Management |
+| SUPERVISOR (Eman, Jana, Abdel Rahman, Mohamed El Desouky) | Leaders | Admin | Leaders + Admin |
+| otherwise (incl. LEADER-only Basant) | Supervisors | Admin | Supervisors + Admin |
 
-Roles: `ADMIN` = Ahmed Sameh · `LEADER` = Islam, Basant · `MEMBER` = everyone else.
-Board placement ≠ role: Basant is LEADER on the supervisors board; Eman, Abdel Rahman,
-Mohamed El Desouky are MEMBER role on the supervisors board.
+Final marks: Ahmed Sameh = ADMIN + MOD · Eman = SUPERVISOR + LEADER ·
+Jana, Abdel Rahman, Mohamed El Desouky = SUPERVISOR · Basant = LEADER ·
+everyone else = MEMBER (shown automatically when no other marks exist).
 
 Zones are computed live from rank (never stored, never hardcoded):
-members board rank 1–10 = SAFE, 11+ = RED · supervisors board rank 1–3 = SAFE, 4+ = RED.
+rank 1–10 = SAFE, rank 11+ = RED.
 
 ---
 
@@ -36,15 +38,15 @@ members board rank 1–10 = SAFE, 11+ = RED · supervisors board rank 1–3 = SA
    - `anon public` key → this is `VITE_SUPABASE_ANON_KEY`
    - ⚠️ NEVER copy the `service_role` key into the frontend.
 
-## Step 2 — Run the migration (existing v1 database) OR schema (fresh)
+## Step 2 — Database setup
 
-- **You have the old tables** (members/supervisors with بندق…): run
-  **`supabase/migration_v2.sql`** in **SQL Editor**. It drops the old model,
-  recreates everything, seeds exactly the 20 required people (all points 0),
-  and ends with verification queries — confirm `total_people = 20`,
-  boards `16 + 4`, roles `1 + 2 + 17`.
 - **Fresh project:** run **`supabase/schema.sql`**, then **`supabase/seed.sql`**
-  (same 20 people).
+  (the 20 people, all points 0).
+- **Existing database on the old two-board model** (`role`/`board` columns):
+  run the conversion SQL provided separately (it moves roles into the
+  `roles` array, drops the board classification, and preserves every
+  person, point, and history record). `supabase/migration_v2.sql` is kept
+  only as the historical v1→v2 path — do not use it for new setups.
 
 ## Step 3 — Configure environment variables
 
@@ -65,40 +67,39 @@ Run locally with `npm install && npm run dev`.
 
 ## Step 4 — The 20 people (already seeded, all points 0)
 
-**Supervisors board (4):** Eman (member), Basant (leader),
-Abdel Rahman (member), Mohamed El Desouky (member).
-**Members board (16):** Islam (leader), Ahmed Sameh (admin),
-Ahmed Mohamed, Thomas, Jana, Habiba, Khaled, Zahra, Fayrouz,
-Mohamed Ahmed, Mohamed Ashraf, Mohamed Sayed Hassan,
-Mohamed Sayed Saleh, Mohamed Nady, Mohreal, Youssef.
+One leaderboard, all 20: Islam, Ahmed Sameh (`{admin,mod}`), Ahmed Mohamed,
+Eman (`{supervisor,leader}`), Basant (`{leader}`), Thomas, Jana (`{supervisor}`),
+Habiba, Khaled, Zahra, Abdel Rahman (`{supervisor}`), Fayrouz, Mohamed Ahmed,
+Mohamed Ashraf, Mohamed El Desouky (`{supervisor}`), Mohamed Sayed Hassan,
+Mohamed Sayed Saleh, Mohamed Nady, Mohreal, Youssef (all `{}` = MEMBER).
 
-The database refuses a 21st person, a 5th supervisor, a 2nd admin,
-and any duplicate name (case-insensitive) — all enforced by triggers/indexes.
+The database refuses a 21st person, a 2nd admin, an invalid mark,
+and any duplicate name (case-insensitive) — all enforced by constraints/indexes.
 
 ## Step 5 — How to rename someone
 
 **Table Editor → people** → edit `name` → Save. History points at the same
 `person_id`, so past records automatically show the new name. To change
-role/board, edit those cells — the supervisor cap and admin uniqueness
-are enforced even on edits.
+marks, edit the `roles` array (e.g. `{supervisor,leader}`) — invalid marks
+and a second admin are rejected automatically.
 
 ## Step 6 — How to add points (the ONLY correct way)
 
 NEVER edit `points_a` / `points_b` cells by hand — that bypasses history.
 Use the atomic `add_points()` RPC in **SQL Editor**, which validates that
-the source fits the person (e.g. `leader` is rejected for members-board
-people, `management` is rejected for non-admins):
+the source fits the person's marks (`leader` requires the SUPERVISOR mark,
+`members`/`management` require ADMIN, `supervisor` requires neither):
 
 ```sql
--- Member: Supervisors or Admin source
-select public.add_points((select id from people where name='Jana'), 'supervisor', 20, 'Great work');
-select public.add_points((select id from people where name='Jana'), 'admin', 15, 'Task done');
+-- Regular member: Supervisors or Admin source
+select public.add_points((select id from people where name='Thomas'), 'supervisor', 20, 'Great work');
+select public.add_points((select id from people where name='Thomas'), 'admin', 15, 'Task done');
 
--- Supervisors board: Leader or Admin source
-select public.add_points((select id from people where name='Eman'), 'leader', 15, 'Top review');
-select public.add_points((select id from people where name='Basant'), 'admin', 10, 'Bonus');
+-- Supervisor-marked: Leader or Admin source
+select public.add_points((select id from people where name='Jana'), 'leader', 15, 'Top review');
+select public.add_points((select id from people where name='Eman'), 'admin', 10, 'Bonus');
 
--- Ahmed Sameh (admin): Members or Management source
+-- Ahmed Sameh (ADMIN mark): Members or Management source
 select public.add_points((select id from people where name='Ahmed Sameh'), 'members', 20, 'Team effort');
 select public.add_points((select id from people where name='Ahmed Sameh'), 'management', 10, 'Decision');
 
@@ -115,7 +116,7 @@ Safe/Red zones recalculate automatically.
 
 | Task | SQL |
 |---|---|
-| Find a person id | `select id, name, role, board, points_a, points_b from people order by name;` |
+| Find a person id | `select id, name, roles, points_a, points_b from people order by name;` |
 | Inspect history | `select * from points_history order by created_at desc limit 50;` |
 | History for one person | `select * from points_history where person_id='<id>' order by created_at desc;` |
 | Repair drift | `select rebuild_person_points();` |
@@ -123,8 +124,7 @@ Safe/Red zones recalculate automatically.
 
 ## Step 8 — Zones (automatic, nothing to configure)
 
-- Members board: ranks 1–10 show SAFE ZONE, rank 11+ shows RED ZONE.
-- Supervisors board: ranks 1–3 SAFE, rank 4+ RED.
+- Ranks 1–10 show SAFE ZONE, rank 11+ shows RED ZONE.
 - Someone moving #11 → #10 flips RED → SAFE on the next Realtime refresh.
 - Zone = icon + text label + divider + subtle tint (never color alone).
 
@@ -164,6 +164,39 @@ up to the limits.
 - Vercel serves `nosniff`, `DENY` framing, strict referrer policy, and a CSP
   allowing only self + Google Fonts + your Supabase project (`*.supabase.co`).
 
+## Step 11 — Web Push notifications (optional)
+
+Team members can opt in (bell icon in the header → choose name → Enable)
+to receive a "Weekly Points Updated" push on their devices whenever their
+own points increase — even with the site closed. Sending is server-side
+only; the frontend can never send pushes.
+
+1. **Generate VAPID keys** (once, locally — `web-push` is already a dependency):
+   `npx web-push generate-vapid-keys`
+2. **Vercel → Project → Settings → Environment Variables** — add:
+   - `SUPABASE_URL` = your project URL (server use only, no `VITE_` prefix)
+   - `SUPABASE_SERVICE_ROLE_KEY` = service-role key (**server only — never in the frontend**)
+   - `VAPID_PUBLIC_KEY` = public key from step 1
+   - `VAPID_PRIVATE_KEY` = private key from step 1 (**server only**)
+   - `PUSH_WEBHOOK_SECRET` = any long random string you invent (server only)
+   Then redeploy so `api/notify-points` picks them up.
+3. **Local `.env`** — add `VITE_VAPID_PUBLIC_KEY=<same public key>` so the
+   browser can subscribe. (Only the public key belongs in `VITE_` variables.)
+4. **Supabase → Database → Webhooks → Create a new hook:**
+   - Name: `notify-points` · Table: `points_history` · Events: `Insert`
+   - Type: `HTTP POST` · Method: `POST`
+   - URL: `https://YOUR-DOMAIN.vercel.app/api/notify-points`
+   - Add one HTTP Header: `x-push-secret` = your `PUSH_WEBHOOK_SECRET` value
+   - Leave the rest default, then create and confirm one successful delivery
+     after your next points update.
+5. **Test:** on your phone, open the site → bell → select your name →
+   Enable → add points for yourself via SQL → the push should arrive with
+   your back in the notifications tray, even with the tab closed.
+
+Notes: deductions never notify (additions only); repeat webhook deliveries
+for the same history row are acknowledged without resending; dead
+endpoints (404/410) are deactivated automatically on send.
+
 ## Troubleshooting
 
 **Site shows the error state / console shows `401` + `42501 permission denied
@@ -181,12 +214,13 @@ This is read-only — it does not weaken RLS or allow any writes.
 ## Verification checklist
 
 - [x] Exactly 20 unique people, no old names, no duplicates (DB-enforced)
-- [x] 4 on supervisors board, 16 on members board
-- [x] Ahmed Sameh ADMIN (Members + Management), gold treatment
-- [x] Islam + Basant LEADER (Supervisors + Admin for both)
-- [x] Everyone else MEMBER; supervisor-board non-leaders stay MEMBER
-- [x] Supervisors-board people use Leaders + Admin labels (never "Supervisor Points")
-- [x] Zones rank-derived: members 1–10 safe / 11+ red, supervisors 1–3 safe / 4+ red
+- [x] ONE leaderboard with all 20, ranked by Total Points
+- [x] Ahmed Sameh ADMIN + MOD (Members + Management)
+- [x] Eman SUPERVISOR + LEADER (Leaders + Admin)
+- [x] Jana, Abdel Rahman, Mohamed El Desouky SUPERVISOR (Leaders + Admin)
+- [x] Basant LEADER only (Supervisors + Admin)
+- [x] Everyone else MEMBER; no invented roles
+- [x] Zones rank-derived: 1–10 safe / 11+ red
 - [x] History records every transaction with per-type sources; filters for all 5
 - [x] Supabase is the source of truth; zero hardcoded people in the frontend
 - [x] No auth, no accounts, no unrelated breakage (`tsc` + `vite build` clean)

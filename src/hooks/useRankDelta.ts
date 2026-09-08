@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import type { Board } from '../types';
 
 /**
  * Rank movement vs. the last observed snapshot (persisted locally).
@@ -8,7 +7,7 @@ import type { Board } from '../types';
  * and the set of ids never seen before.
  */
 export function useRankDelta(
-  board: Board,
+  key: string,
   ranked: { id: string; rank: number }[],
 ): { deltas: Record<string, number>; fresh: Set<string> } {
   const [deltas, setDeltas] = useState<Record<string, number>>({});
@@ -16,10 +15,10 @@ export function useRankDelta(
 
   useEffect(() => {
     if (ranked.length === 0) return;
-    const key = `tl-rank-${board}`;
+    const storageKey = `tl-rank-${key}`;
     let prev: Record<string, number> = {};
     try {
-      prev = JSON.parse(localStorage.getItem(key) ?? '{}') as Record<string, number>;
+      prev = JSON.parse(localStorage.getItem(storageKey) ?? '{}') as Record<string, number>;
     } catch {
       prev = {};
     }
@@ -39,11 +38,11 @@ export function useRankDelta(
     const snap: Record<string, number> = {};
     for (const r of ranked) snap[r.id] = r.rank;
     try {
-      localStorage.setItem(key, JSON.stringify(snap));
+      localStorage.setItem(storageKey, JSON.stringify(snap));
     } catch {
       /* private mode — deltas just won't persist */
     }
-  }, [board, ranked]);
+  }, [key, ranked]);
 
   return { deltas, fresh };
 }

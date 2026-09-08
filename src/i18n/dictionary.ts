@@ -22,6 +22,27 @@ const en = {
   theme: {
     toggle: 'Toggle theme',
   },
+  sound: {
+    on: 'Sound on',
+    off: 'Sound off',
+  },
+  push: {
+    bellOn: 'Notifications on',
+    bellOff: 'Enable notifications',
+    title: 'Enable notifications',
+    explainer: 'Choose your name so we can send your weekly points update to this browser.',
+    selectLabel: 'Team member',
+    selectPh: 'Select your name…',
+    enable: 'Enable Notifications',
+    enabling: 'Enabling…',
+    disable: 'Disable Notifications',
+    disabling: 'Disabling…',
+    success: (name: string) => `Notifications enabled for ${name}.`,
+    blocked: 'Notifications are blocked in your browser. You can enable them from your browser settings.',
+    unsupported: "Notifications aren't supported by this browser.",
+    noKey: 'Push notifications are not configured yet.',
+    error: 'Something went wrong. Please try again.',
+  },
   live: {
     live: 'Live',
     connecting: 'Connecting',
@@ -31,11 +52,6 @@ const en = {
   },
   stats: {
     points: 'Total Points',
-  },
-  tabs: {
-    label: 'Leaderboards',
-    members: 'Members',
-    supervisors: 'Supervisors',
   },
   search: {
     label: 'Search',
@@ -49,7 +65,6 @@ const en = {
     showing: (shown: number, total: number, label: string) =>
       `Showing ${shown} of ${total} ${label} · sorted highest first`,
     members: 'members',
-    supervisors: 'supervisors',
   },
   card: {
     supervisor: 'Supervisor',
@@ -64,6 +79,8 @@ const en = {
   },
   roles: {
     admin: 'ADMIN',
+    mod: 'MOD',
+    supervisor: 'SUPERVISOR',
     leader: 'LEADER',
     member: 'MEMBER',
   },
@@ -129,12 +146,8 @@ const en = {
     body: 'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file — every name, point, and history record loads from your database. See SETUP.md.',
   },
   home: {
-    noMembers: (q: string) => `No members match “${q}”`,
     noMembersYet: 'No members yet',
-    noSupervisors: (q: string) => `No supervisors match “${q}”`,
-    noSupervisorsYet: 'No supervisors yet',
     addMembersHint: 'Add people from Supabase → Table Editor → people.',
-    addSupervisorsHint: 'Add people from Supabase → Table Editor → people.',
   },
   about: {
     kicker: 'About the platform',
@@ -142,10 +155,8 @@ const en = {
     titleB: 'who is leading',
     lede: 'Team Leaderboard is a private, read-only scoreboard for the team. Members open it, see the rankings, check points, and understand performance — nothing more, nothing less.',
     whatTitle: 'What this platform is',
-    whatPre: 'Two live leaderboards — ',
-    whatMid: ' for members with Supervisors, Admin and Total points, and ',
-    whatPost:
-      ' for supervisors with Leaders, Admin and Total points — with role badges and rank-driven Safe/Red zones. Backed by Supabase Postgres with no accounts, no login, and no admin panel: data is managed directly in the database, and the site simply reflects it.',
+    whatBody:
+      'One live leaderboard for all 20 people, ranked by Total Points with rank-driven Safe/Red zones. Role marks — ADMIN, MOD, SUPERVISOR, LEADER, MEMBER — can combine on the same person, and point categories follow those marks. Backed by Supabase Postgres with no accounts, no login, and no admin panel: data is managed directly in the database, and the site simply reflects it.',
     missionTitle: 'Mission',
     missionText:
       'Make recognition transparent and trustworthy. Points are never just a number on a screen — each one carries its source, its reason, and its moment in time, so every member can see exactly how the ranking was earned.',
@@ -192,6 +203,27 @@ const ar: Dict = {
   theme: {
     toggle: 'تبديل المظهر',
   },
+  sound: {
+    on: 'الصوت يعمل',
+    off: 'الصوت متوقف',
+  },
+  push: {
+    bellOn: 'الإشعارات مفعّلة',
+    bellOff: 'تفعيل الإشعارات',
+    title: 'تفعيل الإشعارات',
+    explainer: 'اختر اسمك لنرسل تحديث نقاطك الأسبوعية إلى هذا المتصفح.',
+    selectLabel: 'عضو الفريق',
+    selectPh: 'اختر اسمك…',
+    enable: 'تفعيل الإشعارات',
+    enabling: 'جارٍ التفعيل…',
+    disable: 'إيقاف الإشعارات',
+    disabling: 'جارٍ الإيقاف…',
+    success: (name: string) => `تم تفعيل الإشعارات لـ ${name}.`,
+    blocked: 'الإشعارات محظورة في متصفحك. يمكنك تفعيلها من إعدادات المتصفح.',
+    unsupported: 'هذا المتصفح لا يدعم الإشعارات.',
+    noKey: 'إشعارات الدفع غير مُعدّة بعد.',
+    error: 'حدث خطأ ما. حاول مجددًا.',
+  },
   live: {
     live: 'مباشر',
     connecting: 'جارٍ الاتصال',
@@ -201,11 +233,6 @@ const ar: Dict = {
   },
   stats: {
     points: 'إجمالي النقاط',
-  },
-  tabs: {
-    label: 'لوحات الصدارة',
-    members: 'الأعضاء',
-    supervisors: 'المشرفين',
   },
   search: {
     label: 'بحث',
@@ -219,7 +246,6 @@ const ar: Dict = {
     showing: (shown: number, total: number, label: string) =>
       `عرض ${shown} من ${total} ${label} · مرتبة من الأعلى أولاً`,
     members: 'أعضاء',
-    supervisors: 'مشرفين',
   },
   card: {
     supervisor: 'مشرف',
@@ -234,6 +260,8 @@ const ar: Dict = {
   },
   roles: {
     admin: 'ADMIN',
+    mod: 'MOD',
+    supervisor: 'SUPERVISOR',
     leader: 'LEADER',
     member: 'MEMBER',
   },
@@ -299,12 +327,8 @@ const ar: Dict = {
     body: 'اضبط VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY في ملف .env — كل الأسماء والنقاط والسجل تُحمّل من قاعدة البيانات. راجع SETUP.md.',
   },
   home: {
-    noMembers: (q: string) => `لا يوجد أعضاء يطابقون "${q}"`,
     noMembersYet: 'لا يوجد أعضاء بعد',
-    noSupervisors: (q: string) => `لا يوجد مشرفون يطابقون "${q}"`,
-    noSupervisorsYet: 'لا يوجد مشرفون بعد',
     addMembersHint: 'أضف أشخاصًا من Supabase ← Table Editor ← people.',
-    addSupervisorsHint: 'أضف أشخاصًا من Supabase ← Table Editor ← people.',
   },
   about: {
     kicker: 'عن المنصة',
@@ -312,10 +336,8 @@ const ar: Dict = {
     titleB: 'من يتصدر',
     lede: 'لوحة الصدارة لوحة نتائج خاصة للفريق للقراءة فقط. يفتحها الأعضاء لرؤية الترتيب والتحقق من النقاط وفهم الأداء — لا أكثر ولا أقل.',
     whatTitle: 'ما هي هذه المنصة',
-    whatPre: 'لوحتا صدارة مباشرتان — ',
-    whatMid: ' للأعضاء مع نقاط المشرفين والإدارة والإجمالي، و',
-    whatPost:
-      ' للمشرفين مع نقاط القادة والإدارة والإجمالي — مع شارات الأدوار ومناطق الأمان/الخطر حسب الترتيب. مدعومة بقاعدة بيانات Supabase بلا حسابات ولا تسجيل دخول ولا لوحة تحكم: تُدار البيانات مباشرة في قاعدة البيانات، والموقع يعكسها ببساطة.',
+    whatBody:
+      'لوحة صدارة واحدة مباشرة لجميع الأشخاص العشرين، مرتبة حسب إجمالي النقاط مع مناطق أمان/خطر حسب الترتيب. شارات الأدوار — ADMIN وMOD وSUPERVISOR وLEADER وMEMBER — يمكن أن تجتمع لنفس الشخص، وفئات النقاط تتبع تلك الشارات. مدعومة بقاعدة بيانات Supabase بلا حسابات ولا تسجيل دخول ولا لوحة تحكم: تُدار البيانات مباشرة في قاعدة البيانات، والموقع يعكسها ببساطة.',
     missionTitle: 'المهمة',
     missionText:
       'جعل التقدير شفافًا وجديرًا بالثقة. النقاط ليست مجرد رقم على الشاشة — كل نقطة تحمل مصدرها وسببها ولحظتها، ليرى كل عضو كيف تحقق الترتيب.',

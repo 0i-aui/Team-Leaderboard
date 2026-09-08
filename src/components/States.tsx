@@ -23,7 +23,7 @@ export function LoadingList({ rows = 6 }: { rows?: number }) {
 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="flex flex-col items-center px-6 py-14 text-center">
+    <div className="enter flex flex-col items-center px-6 py-14 text-center">
       <div className="grid h-11 w-11 place-items-center rounded-full bg-slate-900/[0.05] text-slate-400 dark:bg-white/[0.06] dark:text-slate-500">
         <Inbox size={19} />
       </div>
@@ -36,7 +36,7 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   const { t } = useLanguage();
   return (
-    <div className="flex flex-col items-center px-6 py-14 text-center">
+    <div className="enter flex flex-col items-center px-6 py-14 text-center">
       <p className="text-[15px] font-semibold">{t.states.errorTitle}</p>
       <p className="mt-1 max-w-md text-sm text-slate-500 dark:text-slate-400">{message}</p>
       <button

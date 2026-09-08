@@ -1,6 +1,9 @@
 -- ============================================================
--- Team Leaderboard — MIGRATION v2 (unified people model)
--- Run this in: Supabase → SQL Editor → New Query → Paste → Run
+-- Team Leaderboard — MIGRATION v2 (HISTORICAL — do not use for new setups)
+-- This file migrates the ORIGINAL v1 tables to the two-board v2 model.
+-- Current model is v3 (single board + roles array): fresh installs must
+-- use schema.sql + seed.sql; existing v2 databases use the separately
+-- provided conversion SQL. Kept for history only.
 -- ============================================================
 -- What this does:
 --  1. DELETES all old leaderboard data + old tables/functions

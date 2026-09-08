@@ -6,7 +6,7 @@ import { formatDateTime, formatNumber, timeAgo } from '../lib/format';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getZone } from '../utils/rank';
 import { Avatar } from './Avatar';
-import { RoleBadge } from './RoleBadge';
+import { RoleMarks } from './RoleMarks';
 
 const SOURCE_WORD: Record<HistoryEntry['source_key'], 'supervisor' | 'leader' | 'membersSrc' | 'admin' | 'management'> = {
   supervisor: 'supervisor',
@@ -19,7 +19,7 @@ const SOURCE_WORD: Record<HistoryEntry['source_key'], 'supervisor' | 'leader' | 
 export function PersonSheet({
   person,
   rank,
-  boardSize,
+  totalCount,
   history,
   labels,
   onClose,
@@ -27,7 +27,7 @@ export function PersonSheet({
 }: {
   person: Person | null;
   rank: number;
-  boardSize: number;
+  totalCount: number;
   history: HistoryEntry[];
   labels: { a: string; b: string };
   onClose: () => void;
@@ -87,7 +87,7 @@ export function PersonSheet({
               <Avatar name={person.name} color={person.avatar_color} />
               <div className="min-w-0">
                 <h3 className="truncate text-lg font-bold tracking-tight">{person.name}</h3>
-                <RoleBadge role={person.role} />
+                <RoleMarks roles={person.roles} />
               </div>
             </div>
 
@@ -95,13 +95,13 @@ export function PersonSheet({
               <div>
                 <div className="label-caps">{t.sheet.rank}</div>
                 <div className="num-tabular mt-1 text-xl font-extrabold">
-                  {rank} <span className="text-xs font-medium text-slate-400">{t.sheet.of(boardSize)}</span>
+                  {rank} <span className="text-xs font-medium text-slate-400">{t.sheet.of(totalCount)}</span>
                 </div>
               </div>
               <div>
                 <div className="label-caps">{t.sheet.zone}</div>
-                <div className={`mt-1 text-xl font-extrabold ${getZone(person.board, rank) === 'safe' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
-                  {getZone(person.board, rank) === 'safe' ? t.zones.safe : t.zones.red}
+                <div className={`mt-1 text-xl font-extrabold ${getZone(rank) === 'safe' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                  {getZone(rank) === 'safe' ? t.zones.safe : t.zones.red}
                 </div>
               </div>
               <div className="text-end">

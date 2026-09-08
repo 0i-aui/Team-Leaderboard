@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { ChevronDown, PlugZap } from 'lucide-react';
-import { Tabs } from '../components/Tabs';
 import { SearchBar } from '../components/SearchBar';
 import { StatsBar } from '../components/StatsBar';
 import { PersonRow } from '../components/PersonRow';
@@ -12,8 +11,9 @@ import { LoadingList, EmptyState, ErrorState } from '../components/States';
 import type { MainView } from '../components/Header';
 import { useRankDelta } from '../hooks/useRankDelta';
 import { useLanguage } from '../i18n/LanguageContext';
-import { getZone, pointLabels, rankPeople, ZONE_CUTOFF, type Zone } from '../utils/rank';
-import type { Board, HistoryEntry, HistoryFilter, LeaderboardTab, Person } from '../types';
+import { sounds } from '../lib/sound';
+import { getZone, pointLabels, rankPeople, SAFE_CUTOFF, type Zone } from '../utils/rank';
+import type { HistoryEntry, HistoryFilter, Person } from '../types';
 
 const HISTORY_PAGE = 20;
 type DateRange = 'all' | 'today' | 'week' | 'month';
@@ -64,7 +64,6 @@ function inRange(iso: string, range: DateRange): boolean {
 
 export function Home({ people, history, loading, error, configured, view, onViewChange, refetch }: Props) {
   const { t } = useLanguage();
-  const [tab, setTab] = useState<LeaderboardTab>('members');
   const [query, setQuery] = useState('');
   const [source, setSource] = useState<HistoryFilter>('all');
   const [personId, setPersonId] = useState<string>('all');
@@ -72,23 +71,56 @@ export function Home({ people, history, loading, error, configured, view, onView
   const [visibleHistory, setVisibleHistory] = useState(HISTORY_PAGE);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const allMembers = useMemo(() => people.filter((p) => p.board === 'members'), [people]);
-  const allSupervisors = useMemo(() => people.filter((p) => p.board === 'supervisors'), [people]);
-
-  // Canonical board ranks (unfiltered) — every rank shown anywhere comes from here.
-  const rankedBoards = useMemo(
-    () => ({ members: rankPeople(allMembers), supervisors: rankPeople(allSupervisors) }),
-    [allMembers, allSupervisors],
-  );
+  // Canonical ranks (unfiltered) — every rank shown anywhere comes from here.
+  const ranked = useMemo(() => rankPeople(people), [people]);
   const rankInfo = useMemo(() => {
-    const m = new Map<string, { rank: number; board: Board }>();
-    for (const p of rankedBoards.members) m.set(p.id, { rank: p.rank, board: 'members' });
-    for (const p of rankedBoards.supervisors) m.set(p.id, { rank: p.rank, board: 'supervisors' });
+    const m = new Map<string, number>();
+    for (const p of ranked) m.set(p.id, p.rank);
     return m;
-  }, [rankedBoards]);
+  }, [ranked]);
 
-  const memberMovement = useRankDelta('members', rankedBoards.members);
-  const supervisorMovement = useRankDelta('supervisors', rankedBoards.supervisors);
+  const { deltas, fresh } = useRankDelta('board', ranked);
+
+  // Transient movement spotlight + event sounds, driven ONLY by real
+  // data changes: each committed ranking is diffed against the previous
+  // one. First load establishes the baseline silently — nothing "moves".
+  const [moved, setMoved] = useState<Record<string, 'up' | 'down'>>({});
+  const prevSnapshot = useRef<Map<string, { rank: number; total: number }> | null>(null);
+
+  useEffect(() => {
+    if (loading || ranked.length === 0) return;
+    const cur = new Map(ranked.map((p) => [p.id, { rank: p.rank, total: p.total_points }]));
+    const prev = prevSnapshot.current;
+    prevSnapshot.current = cur;
+    if (!prev) return;
+    const next: Record<string, 'up' | 'down'> = {};
+    let ups = 0;
+    let downs = 0;
+    let milestones = 0;
+    let pointsOnly = false;
+    for (const p of ranked) {
+      const was = prev.get(p.id);
+      if (!was) continue;
+      if (was.rank !== p.rank) {
+        const dir = p.rank < was.rank ? 'up' : 'down';
+        next[p.id] = dir;
+        if (dir === 'up') ups++;
+        else downs++;
+        if (p.rank <= 3 && was.rank > 3) milestones++;
+      } else if (was.total !== p.total_points) {
+        pointsOnly = true;
+      }
+    }
+    const changed = Object.keys(next).length;
+    if (changed === 0 && !pointsOnly) return;
+    setMoved(next);
+    if (milestones > 0) sounds.milestone();
+    else if (ups > 0 && downs === 0) sounds.rankUp();
+    else if (downs > 0 && ups === 0) sounds.rankDown();
+    else sounds.points();
+    const timer = setTimeout(() => setMoved({}), 2200);
+    return () => clearTimeout(timer);
+  }, [ranked, loading]);
 
   const q = query.trim();
   const searchResults = useMemo(() => {
@@ -115,20 +147,14 @@ export function Home({ people, history, loading, error, configured, view, onView
     const stamps = [...history.map((h) => h.created_at), ...people.map((p) => p.updated_at)];
     const latestUpdate = stamps.length > 0 ? stamps.reduce((a, b) => (a > b ? a : b)) : null;
     return {
-      totalMembers: allMembers.length,
-      totalSupervisors: allSupervisors.length,
+      totalPeople: people.length,
       totalPoints: people.reduce((a, p) => a + p.total_points, 0),
       latestUpdate,
     };
-  }, [people, history, allMembers, allSupervisors]);
+  }, [people, history]);
 
   const selected = selectedId ? (people.find((p) => p.id === selectedId) ?? null) : null;
-  const selectedRank = selected ? (rankInfo.get(selected.id)?.rank ?? 0) : 0;
-  const selectedBoardSize = selected
-    ? selected.board === 'members'
-      ? allMembers.length
-      : allSupervisors.length
-    : 0;
+  const selectedRank = selected ? (rankInfo.get(selected.id) ?? 0) : 0;
 
   const openHistoryFor = (id: string) => {
     setSelectedId(null);
@@ -144,14 +170,13 @@ export function Home({ people, history, loading, error, configured, view, onView
     );
   }
 
-  const renderRow = (
-    p: Ranked,
-    i: number,
-    deltas: Record<string, number>,
-    fresh: Set<string>,
-    highlight?: string,
-  ) => {
-    const zone: Zone = getZone(p.board, p.rank);
+  const openSheet = (id: string) => {
+    sounds.tap();
+    setSelectedId(id);
+  };
+
+  const renderRow = (p: Ranked, i: number, highlight?: string) => {
+    const zone: Zone = getZone(p.rank);
     return (
       <PersonRow
         key={p.id}
@@ -159,41 +184,43 @@ export function Home({ people, history, loading, error, configured, view, onView
         rank={p.rank}
         index={i}
         zone={zone}
-        labels={pointLabels(t, p.role, p.board)}
+        labels={pointLabels(t, p.roles)}
         delta={deltas[p.id]}
         isNew={fresh.has(p.id)}
         query={highlight}
-        onSelect={() => setSelectedId(p.id)}
+        flash={moved[p.id]}
+        onSelect={() => openSheet(p.id)}
       />
     );
   };
 
-  const boardSection = (board: Board) => {
-    const ranked = rankedBoards[board];
-    const total = board === 'members' ? allMembers.length : allSupervisors.length;
-    const { deltas, fresh } = board === 'members' ? memberMovement : supervisorMovement;
-    const cutoff = ZONE_CUTOFF[board];
-    const safe = ranked.filter((p) => getZone(board, p.rank) === 'safe');
-    const red = ranked.filter((p) => getZone(board, p.rank) === 'red');
-    const redFrom = red.length > 0 ? Math.min(...red.map((p) => p.rank)) : cutoff + 1;
-    const label = board === 'members' ? t.list.members : t.list.supervisors;
-    const emptyTitle = board === 'members' ? t.home.noMembersYet : t.home.noSupervisorsYet;
-    const emptyHint = board === 'members' ? t.home.addMembersHint : t.home.addSupervisorsHint;
-    if (ranked.length === 0) return <EmptyState title={emptyTitle} hint={emptyHint} />;
+  const boardList = (list: Ranked[], highlight?: string) => {
+    if (list.length === 0) return <EmptyState title={t.home.noMembersYet} hint={t.home.addMembersHint} />;
+    const safe = list.filter((p) => getZone(p.rank) === 'safe');
+    const red = list.filter((p) => getZone(p.rank) === 'red');
+    const redFrom = red.length > 0 ? Math.min(...red.map((p) => p.rank)) : SAFE_CUTOFF + 1;
     return (
       <>
-        <ListMeta shown={ranked.length} total={total} label={label} />
+        <ListMeta shown={list.length} total={people.length} label={t.list.members} />
         <div className="surface overflow-hidden rounded-2xl">
           <div className="px-3 pt-3 sm:px-4">
-            <ZoneHeader zone="safe" sub={t.zones.safeSub(cutoff)} />
+            <ZoneHeader zone="safe" sub={t.zones.safeSub(SAFE_CUTOFF)} />
           </div>
-          <div className="mt-1">{safe.map((p, i) => renderRow(p, i, deltas, fresh))}</div>
+          <div className="mt-1">
+            <AnimatePresence initial={false}>
+              {safe.map((p, i) => renderRow(p, i, highlight))}
+            </AnimatePresence>
+          </div>
           {red.length > 0 && (
             <>
               <div className="px-3 pt-3 sm:px-4">
                 <ZoneHeader zone="red" sub={t.zones.redSub(redFrom)} />
               </div>
-              <div className="mt-1">{red.map((p, i) => renderRow(p, safe.length + i, deltas, fresh))}</div>
+              <div className="mt-1">
+                <AnimatePresence initial={false}>
+                  {red.map((p, i) => renderRow(p, safe.length + i, highlight))}
+                </AnimatePresence>
+              </div>
             </>
           )}
         </div>
@@ -214,42 +241,34 @@ export function Home({ people, history, loading, error, configured, view, onView
         <EmptyState title={t.search.noMatch(q)} hint={t.search.tryDifferent} />
       ) : (
         <div className="surface overflow-hidden rounded-2xl">
-          {searchResults.map((p, i) => {
-            const info = rankInfo.get(p.id);
-            const zone: Zone = info ? getZone(info.board, info.rank) : 'safe';
-            const mv = info?.board === 'members' ? memberMovement : supervisorMovement;
-            return (
-              <PersonRow
-                key={p.id}
-                person={p}
-                rank={info?.rank ?? 0}
-                index={i}
-                zone={zone}
-                labels={pointLabels(t, p.role, p.board)}
-                delta={info ? mv.deltas[p.id] : undefined}
-                isNew={info ? mv.fresh.has(p.id) : false}
-                query={q}
-                onSelect={() => setSelectedId(p.id)}
-              />
-            );
-          })}
+          <AnimatePresence initial={false}>
+            {searchResults.map((p, i) => {
+              const rank = rankInfo.get(p.id) ?? 0;
+              const zone: Zone = getZone(rank);
+              return (
+                <PersonRow
+                  key={p.id}
+                  person={p}
+                  rank={rank}
+                  index={i}
+                  zone={zone}
+                  labels={pointLabels(t, p.roles)}
+                  delta={deltas[p.id]}
+                  isNew={fresh.has(p.id)}
+                  query={q}
+                  flash={moved[p.id]}
+                  onSelect={() => openSheet(p.id)}
+                />
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
     </div>
   ) : (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={tab}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.18 }}
-        className="space-y-3"
-        aria-label={tab === 'members' ? t.tabs.members : t.tabs.supervisors}
-      >
-        {boardSection(tab)}
-      </motion.div>
-    </AnimatePresence>
+    <div className="space-y-3" aria-label={t.nav.board}>
+      {boardList(ranked)}
+    </div>
   );
 
   const dateOpts: { id: DateRange; label: string }[] = [
@@ -348,36 +367,25 @@ export function Home({ people, history, loading, error, configured, view, onView
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4">
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={view}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-        >
-          {view === 'board' ? (
-            <div className="space-y-4">
-              <div className="space-y-1 pt-1">
-                <h1 className="text-xl font-bold tracking-tight">{t.nav.board}</h1>
-                <StatsBar {...stats} />
-              </div>
-              <Tabs tab={tab} onChange={setTab} memberCount={allMembers.length} supervisorCount={allSupervisors.length} />
-              <SearchBar value={query} onChange={setQuery} placeholder={t.search.teamPh} />
-              {boardView}
-            </div>
-          ) : (
-            historyView
-          )}
-        </motion.div>
-      </AnimatePresence>
+      {view === 'board' ? (
+        <div className="space-y-4">
+          <div className="space-y-1 pt-1">
+            <h1 className="text-xl font-bold tracking-tight">{t.nav.board}</h1>
+            <StatsBar {...stats} />
+          </div>
+          <SearchBar value={query} onChange={setQuery} placeholder={t.search.teamPh} />
+          {boardView}
+        </div>
+      ) : (
+        historyView
+      )}
 
       <PersonSheet
         person={selected}
         rank={selectedRank}
-        boardSize={selectedBoardSize}
+        totalCount={people.length}
         history={history}
-        labels={selected ? pointLabels(t, selected.role, selected.board) : { a: '', b: '' }}
+        labels={selected ? pointLabels(t, selected.roles) : { a: '', b: '' }}
         onClose={() => setSelectedId(null)}
         onViewHistory={openHistoryFor}
       />

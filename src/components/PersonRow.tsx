@@ -6,7 +6,7 @@ import { formatNumber } from '../lib/format';
 import { useCountUp } from '../hooks/useCountUp';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Avatar } from './Avatar';
-import { RoleBadge } from './RoleBadge';
+import { RoleMarks } from './RoleMarks';
 
 function Total({ value }: { value: number }) {
   const v = useCountUp(value);
@@ -37,6 +37,7 @@ export function PersonRow({
   delta,
   isNew,
   query,
+  flash,
   onSelect,
 }: {
   person: Person;
@@ -47,6 +48,8 @@ export function PersonRow({
   delta?: number;
   isNew?: boolean;
   query?: string;
+  /** Transient highlight right after this row actually changed rank */
+  flash?: 'up' | 'down';
   onSelect: () => void;
 }) {
   const { t } = useLanguage();
@@ -67,9 +70,9 @@ export function PersonRow({
         layout: { type: 'spring', stiffness: 350, damping: 34 },
       }}
       aria-label={t.card.personAria(rank, person.name, person.total_points)}
-      className={`rowline row-hover row-press w-full px-3 py-3 text-start sm:px-4 ${
+      className={`rowline row-hover row-press group w-full px-3 py-3 text-start sm:px-4 ${
         rank === 1 ? 'bg-slate-900/[0.025] dark:bg-white/[0.03]' : ''
-      }`}
+      } ${flash === 'up' ? 'flash-up' : flash === 'down' ? 'flash-down' : ''}`}
     >
       <span className="flex items-center gap-3">
         {/* Rank */}
@@ -106,7 +109,7 @@ export function PersonRow({
             <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               <Name name={person.name} query={query} />
             </span>
-            <RoleBadge role={person.role} />
+            <RoleMarks roles={person.roles} />
           </span>
           {/* Mobile breakdown line */}
           <span className="num-tabular mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400 md:hidden">
@@ -149,7 +152,7 @@ export function PersonRow({
           </span>
         </span>
 
-        <ChevronRight size={16} className="shrink-0 text-slate-300 rtl:rotate-180 dark:text-slate-600" aria-hidden />
+        <ChevronRight size={16} className="shrink-0 text-slate-300 transition-colors duration-150 group-hover:text-slate-500 rtl:rotate-180 dark:text-slate-600 dark:group-hover:text-slate-300" aria-hidden />
       </span>
     </motion.button>
   );

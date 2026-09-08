@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import type { Board, HistoryEntry, Person, Role } from '../types';
+import type { HistoryEntry, Person, RoleMark } from '../types';
 
 function toPerson(row: {
   id: string;
   name: string;
-  role: string;
-  board: string;
+  roles: string[];
   points_a: number;
   points_b: number;
   avatar_color: string | null;
@@ -14,8 +13,7 @@ function toPerson(row: {
 }): Person {
   return {
     ...row,
-    role: row.role as Role,
-    board: row.board as Board,
+    roles: row.roles as RoleMark[],
     total_points: row.points_a + row.points_b,
   };
 }
@@ -55,7 +53,7 @@ export function useLeaderboard() {
       const [pRes, hRes] = await Promise.all([
         supabase
           .from('people')
-          .select('id,name,role,board,points_a,points_b,avatar_color,updated_at')
+          .select('id,name,roles,points_a,points_b,avatar_color,updated_at')
           .order('name'),
         supabase
           .from('points_history')

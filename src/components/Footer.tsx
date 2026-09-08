@@ -21,6 +21,9 @@ export function Footer() {
           <a href={DEVELOPER.instagram} target="_blank" rel="noreferrer" className="btn-press font-medium hover:text-slate-900 dark:hover:text-white">
             Instagram
           </a>
+          <a href={DEVELOPER.linkedin} target="_blank" rel="noreferrer" aria-label="LinkedIn" className="btn-press font-medium hover:text-slate-900 dark:hover:text-white">
+            LinkedIn
+          </a>
         </nav>
       </div>
     </footer>

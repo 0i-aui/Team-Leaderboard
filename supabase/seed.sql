@@ -1,36 +1,39 @@
 -- ============================================================
 -- Team Leaderboard — Seed: the 20 required people (all points 0)
 -- Run AFTER schema.sql on a FRESH database.
--- (migration_v2.sql already includes this seed — do not run both.)
 -- ============================================================
--- Boards: 16 members + 4 supervisors (Eman, Basant,
--- Abdel Rahman, Mohamed El Desouky). Roles: 1 admin
--- (Ahmed Sameh), 2 leaders (Islam, Basant), 17 members.
--- Caps in the schema reject any 21st person automatically.
+-- ONE leaderboard, all 20 people. Roles are additive marks
+-- (empty = MEMBER). Caps in the schema reject any 21st person
+-- and any second admin automatically.
+--  * Ahmed Sameh ......... {admin, mod}
+--  * Eman ................ {supervisor, leader}
+--  * Jana, Abdel Rahman,
+--    Mohamed El Desouky .. {supervisor}
+--  * Basant .............. {leader}
+--  * everyone else ....... {} (displayed MEMBER)
 
-insert into public.people (name, role, board, avatar_color) values
-  ('Islam',               'leader', 'members',     '#f59e0b'),
-  ('Ahmed Sameh',         'admin',  'members',     '#6366f1'),
-  ('Ahmed Mohamed',       'member', 'members',     '#0ea5e9'),
-  ('Thomas',              'member', 'members',     '#10b981'),
-  ('Jana',                'member', 'members',     '#ec4899'),
-  ('Habiba',              'member', 'members',     '#8b5cf6'),
-  ('Khaled',              'member', 'members',     '#14b8a6'),
-  ('Zahra',               'member', 'members',     '#f43f5e'),
-  ('Abdel Rahman',        'member', 'supervisors', '#0ea5e9'),
-  ('Fayrouz',             'member', 'members',     '#f59e0b'),
-  ('Mohamed Ahmed',       'member', 'members',     '#6366f1'),
-  ('Mohamed Ashraf',      'member', 'members',     '#10b981'),
-  ('Mohamed El Desouky',  'member', 'supervisors', '#f59e0b'),
-  ('Mohamed Sayed Hassan','member', 'members',     '#14b8a6'),
-  ('Mohamed Sayed Saleh', 'member', 'members',     '#8b5cf6'),
-  ('Mohamed Nady',        'member', 'members',     '#ec4899'),
-  ('Mohreal',             'member', 'members',     '#0ea5e9'),
-  ('Youssef',             'member', 'members',     '#10b981'),
-  ('Eman',                'member', 'supervisors', '#ec4899'),
-  ('Basant',              'leader', 'supervisors', '#f59e0b');
+insert into public.people (name, roles, avatar_color) values
+  ('Islam',                '{leader}',             '#f59e0b'),
+  ('Ahmed Sameh',          '{admin,mod}',          '#6366f1'),
+  ('Ahmed Mohamed',        '{}',                   '#0ea5e9'),
+  ('Thomas',               '{}',                   '#10b981'),
+  ('Jana',                 '{supervisor}',         '#ec4899'),
+  ('Habiba',               '{}',                   '#8b5cf6'),
+  ('Khaled',               '{}',                   '#14b8a6'),
+  ('Zahra',                '{}',                   '#f43f5e'),
+  ('Abdel Rahman',         '{supervisor}',         '#0ea5e9'),
+  ('Fayrouz',              '{}',                   '#f59e0b'),
+  ('Mohamed Ahmed',        '{}',                   '#6366f1'),
+  ('Mohamed Ashraf',       '{}',                   '#10b981'),
+  ('Mohamed El Desouky',   '{supervisor}',         '#f59e0b'),
+  ('Mohamed Sayed Hassan', '{}',                   '#14b8a6'),
+  ('Mohamed Sayed Saleh',  '{}',                   '#8b5cf6'),
+  ('Mohamed Nady',         '{}',                   '#ec4899'),
+  ('Mohreal',              '{}',                   '#0ea5e9'),
+  ('Youssef',              '{}',                   '#10b981'),
+  ('Eman',                 '{supervisor,leader}',  '#ec4899'),
+  ('Basant',               '{leader}',             '#f59e0b');
 
--- Verification (expect 20 / 16+4 / 1+2+17):
+-- Verification (expect 20 people; 1 admin; Eman with both marks):
 select count(*) as total_people from public.people;
-select board, count(*) as n from public.people group by board order by board;
-select role, count(*) as n from public.people group by role order by role;
+select name, roles, points_a, points_b from public.people order by name;

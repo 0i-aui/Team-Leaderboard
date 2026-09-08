@@ -1,8 +1,25 @@
 import { motion } from 'framer-motion';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { DEVELOPER } from '../lib/developer';
 import { useLanguage } from '../i18n/LanguageContext';
+
+/** One quiet scroll reveal, reused by every section — opacity + 10px, once. */
+function Reveal({ children, label }: { children: ReactNode; label?: string }) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      aria-label={label}
+      className="mt-8 border-t border-slate-200 pt-5 dark:border-white/10"
+    >
+      {children}
+    </motion.section>
+  );
+}
 
 export function About() {
   const { t } = useLanguage();
@@ -33,25 +50,21 @@ export function About() {
         {t.about.lede}
       </p>
 
-      <section className="mt-8 border-t border-slate-200 pt-5 dark:border-white/10">
+      <Reveal>
         <h2 className="text-[15px] font-bold">{t.about.whatTitle}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          {t.about.whatPre}
-          <strong className="font-semibold text-slate-800 dark:text-slate-200">{t.tabs.members}</strong>
-          {t.about.whatMid}
-          <strong className="font-semibold text-slate-800 dark:text-slate-200">{t.tabs.supervisors}</strong>
-          {t.about.whatPost}
-        </p>
-      </section>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            {t.about.whatBody}
+          </p>
+      </Reveal>
 
-      <section className="mt-8 border-t border-slate-200 pt-5 dark:border-white/10">
+      <Reveal>
         <h2 className="text-[15px] font-bold">{t.about.missionTitle}</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
           {t.about.missionText}
         </p>
-      </section>
+      </Reveal>
 
-      <section className="mt-8 border-t border-slate-200 pt-5 dark:border-white/10" aria-label={t.about.principlesTitle}>
+      <Reveal label={t.about.principlesTitle}>
         <h2 className="text-[15px] font-bold">{t.about.principlesTitle}</h2>
         <ol className="mt-1 divide-y divide-slate-100 dark:divide-white/[0.06]">
           {principles.map((p) => (
@@ -64,9 +77,9 @@ export function About() {
             </li>
           ))}
         </ol>
-      </section>
+      </Reveal>
 
-      <section className="mt-8 border-t border-slate-200 pt-5 dark:border-white/10" aria-label={t.about.devKicker}>
+      <Reveal label={t.about.devKicker}>
         <p className="label-caps">{t.about.devKicker}</p>
         <p className="mt-2 text-[15px] font-bold">{t.footer.credit}</p>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t.about.devText}</p>
@@ -83,7 +96,7 @@ export function About() {
             </a>
           ))}
         </div>
-      </section>
+      </Reveal>
 
       <div className="mt-8">
         <Link
