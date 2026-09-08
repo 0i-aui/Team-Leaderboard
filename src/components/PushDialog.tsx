@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, BellRing, X } from 'lucide-react';
 import type { Person } from '../types';
@@ -51,8 +52,12 @@ export function PushBell({ people }: { people: Person[] }) {
       </button>
 
       <AnimatePresence>
-        {open && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={t.push.title}>
+        {/* Portaled to body: the sticky header's backdrop-blur creates a
+            containing block for fixed descendants, which would otherwise
+            anchor this dialog to the header box instead of the viewport. */}
+        {open &&
+          createPortal(
+            <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={t.push.title}>
             <motion.button
               type="button"
               aria-label={t.sheet.close}
@@ -158,8 +163,9 @@ export function PushBell({ people }: { people: Person[] }) {
                 )}
               </div>
             </motion.div>
-          </div>
-        )}
+            </div>,
+            document.body,
+          )}
       </AnimatePresence>
     </>
   );
