@@ -42,8 +42,9 @@ export function PushBell({ people }: { people: Person[] }) {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => setOpen((v) => !v)}
         aria-label={active ? t.push.bellOn : t.push.bellOff}
+        aria-expanded={open}
         title={active ? t.push.bellOn : t.push.bellOff}
         className={`${BTN} relative`}
       >
@@ -51,12 +52,15 @@ export function PushBell({ people }: { people: Person[] }) {
         {active && <span aria-hidden className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />}
       </button>
 
-      <AnimatePresence>
-        {/* Portaled to body: the sticky header's backdrop-blur creates a
-            containing block for fixed descendants, which would otherwise
-            anchor this dialog to the header box instead of the viewport. */}
-        {open &&
-          createPortal(
+      {/*
+        Portal OUTSIDE AnimatePresence (never the reverse): the portal
+        escapes the header's backdrop-blur containing block so the dialog
+        anchors to the viewport, while AnimatePresence keeps a plain
+        element child it can mount, track, and animate reliably.
+      */}
+      {createPortal(
+        <AnimatePresence>
+          {open && (
             <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={t.push.title}>
             <motion.button
               type="button"
@@ -163,10 +167,11 @@ export function PushBell({ people }: { people: Person[] }) {
                 )}
               </div>
             </motion.div>
-            </div>,
-            document.body,
+            </div>
           )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body,
+      )}
     </>
   );
 }
