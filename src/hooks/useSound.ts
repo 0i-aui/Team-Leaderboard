@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { setSoundEnabled, unlockAudio, unlockOnFirstGesture } from '../lib/sound';
+import { setSoundEnabled, unlockAudio, unlockOnEveryGesture } from '../lib/sound';
 
 const KEY = 'team-leaderboard-sound';
 
@@ -29,10 +29,11 @@ export function useSound() {
     }
   }, [enabled]);
 
-  // Browsers gate audio behind user interaction: unlock on first gesture
-  // so later event-driven sounds (e.g. realtime updates) are allowed.
+  // Browsers gate audio behind user interaction: re-unlock on every
+  // gesture so later event-driven sounds (e.g. realtime updates) are
+  // allowed even if the context was re-suspended in the background.
   useEffect(() => {
-    unlockOnFirstGesture();
+    unlockOnEveryGesture();
   }, []);
 
   const toggle = useCallback(() => {

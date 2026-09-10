@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, BellRing, X } from 'lucide-react';
 import type { Person } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { displayName } from '../i18n/names';
 import { usePush } from '../hooks/usePush';
 
 const BTN =
@@ -11,12 +12,20 @@ const BTN =
 
 /** Header bell + setup dialog. Permission is only requested from the enable button. */
 export function PushBell({ people }: { people: Person[] }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const { status, selectedId, setSelectedId, activePersonId, enable, disable } = usePush();
   const [open, setOpen] = useState(false);
 
-  const sorted = useMemo(() => [...people].sort((a, b) => a.name.localeCompare(b.name)), [people]);
-  const activeName = activePersonId ? (people.find((p) => p.id === activePersonId)?.name ?? null) : null;
+  const sorted = useMemo(
+    () =>
+      [...people].sort((a, b) =>
+        displayName(a.name, lang).localeCompare(displayName(b.name, lang)),
+      ),
+    [people, lang],
+  );
+  const activeName = activePersonId
+    ? (displayName(people.find((p) => p.id === activePersonId)?.name ?? '', lang) || null)
+    : null;
   const active = status === 'active';
 
   useEffect(() => {
@@ -127,7 +136,7 @@ export function PushBell({ people }: { people: Person[] }) {
                         <option value="">{t.push.selectPh}</option>
                         {sorted.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.name}
+                            {displayName(p.name, lang)}
                           </option>
                         ))}
                       </select>

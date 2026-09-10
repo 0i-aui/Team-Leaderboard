@@ -7,23 +7,26 @@ import { useCountUp } from '../hooks/useCountUp';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Avatar } from './Avatar';
 import { RoleMarks } from './RoleMarks';
+import { displayName } from '../i18n/names';
+import type { Lang } from '../i18n/dictionary';
 
 function Total({ value }: { value: number }) {
   const v = useCountUp(value);
   return <span className="num-tabular">{formatNumber(v)}</span>;
 }
 
-function Name({ name, query }: { name: string; query?: string }) {
+function Name({ name, query, lang }: { name: string; query?: string; lang: Lang }) {
   const { t } = useLanguage();
+  const shown = displayName(name, lang);
   const q = (query ?? '').trim();
-  if (!q) return <>{name}</>;
-  const i = name.toLowerCase().indexOf(q.toLowerCase());
-  if (i === -1) return <>{name}</>;
+  if (!q) return <>{shown}</>;
+  const i = shown.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return <>{shown}</>;
   return (
     <>
-      {name.slice(0, i)}
-      <mark aria-label={t.search.label}>{name.slice(i, i + q.length)}</mark>
-      {name.slice(i + q.length)}
+      {shown.slice(0, i)}
+      <mark aria-label={t.search.label}>{shown.slice(i, i + q.length)}</mark>
+      {shown.slice(i + q.length)}
     </>
   );
 }
@@ -52,7 +55,7 @@ export function PersonRow({
   flash?: 'up' | 'down';
   onSelect: () => void;
 }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const top = rank <= 3;
   const safe = zone === 'safe';
   return (
@@ -69,7 +72,7 @@ export function PersonRow({
         delay: Math.min(index * 0.03, 0.25),
         layout: { type: 'spring', stiffness: 350, damping: 34 },
       }}
-      aria-label={t.card.personAria(rank, person.name, person.total_points)}
+      aria-label={t.card.personAria(rank, displayName(person.name, lang), person.total_points)}
       className={`rowline row-hover row-press group w-full px-3 py-3 text-start sm:px-4 ${
         rank === 1 ? 'bg-slate-900/[0.025] dark:bg-white/[0.03]' : ''
       } ${flash === 'up' ? 'flash-up' : flash === 'down' ? 'flash-down' : ''}`}
@@ -107,7 +110,7 @@ export function PersonRow({
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-baseline gap-x-2">
             <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-              <Name name={person.name} query={query} />
+              <Name name={person.name} query={query} lang={lang} />
             </span>
             <RoleMarks roles={person.roles} />
           </span>

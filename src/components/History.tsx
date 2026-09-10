@@ -3,6 +3,7 @@ import { StickyNote } from 'lucide-react';
 import type { HistoryEntry, HistoryFilter, SourceKey } from '../types';
 import { formatDateTime, formatNumber, timeAgo } from '../lib/format';
 import { useLanguage } from '../i18n/LanguageContext';
+import { displayName } from '../i18n/names';
 
 const FRESH_MS = 24 * 3600 * 1000;
 
@@ -39,7 +40,7 @@ export function HistoryItem({ item, index }: { item: HistoryEntry; index: number
         <span className={`num-tabular text-[15px] font-bold ${gain ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
           {gain ? '+' : ''}{formatNumber(item.points_change)}
         </span>
-        <span className="truncate text-sm font-semibold">{item.people?.name ?? t.history.unknownMember}</span>
+        <span className="truncate text-sm font-semibold">{item.people ? displayName(item.people.name, lang) : t.history.unknownMember}</span>
         {isFresh && (
           <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
             {t.history.new}

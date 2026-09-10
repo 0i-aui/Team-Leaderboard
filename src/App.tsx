@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Header, type MainView } from './components/Header';
 import { Footer } from './components/Footer';
 import { BackToTop } from './components/BackToTop';
+import { NotifyNudge } from './components/NotifyNudge';
 import { useLanguage } from './i18n/LanguageContext';
 import { Home } from './pages/Home';
 import { useLeaderboard } from './hooks/useLeaderboard';
@@ -79,6 +80,7 @@ export default function App() {
 
       <Footer />
       <BackToTop />
+      <NotifyNudge />
     </div>
   );
 }

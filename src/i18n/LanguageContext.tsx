@@ -8,11 +8,11 @@ function initialLang(): Lang {
   try {
     const saved = localStorage.getItem(KEY);
     if (saved === 'ar' || saved === 'en') return saved;
-    const browser = (navigator.language || 'en').toLowerCase();
-    return browser.startsWith('ar') ? 'ar' : 'en';
   } catch {
-    return 'en';
+    /* fall through to default */
   }
+  // First-time visitors start in Arabic; an explicit choice is persisted.
+  return 'ar';
 }
 
 interface LangCtx {

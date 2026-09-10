@@ -28,7 +28,7 @@ function LangToggle({ lang, setLang, label, enLabel, arLabel }: { lang: Lang; se
           type="button"
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
-          className={`btn-press min-h-[30px] rounded-full px-2.5 text-[11px] font-bold transition-colors ${
+          className={`btn-press min-h-[30px] rounded-full px-2 text-[11px] font-bold transition-colors sm:px-2.5 ${
             lang === l
               ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
               : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
@@ -94,13 +94,14 @@ export function Header({ theme, onToggleTheme, live, configured, view, onViewCha
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[#f6f7f9]/85 backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#0a0d13]/85">
-      <div className="mx-auto w-full max-w-5xl px-4">
-        <div className="flex h-14 items-center justify-between gap-2">
-          <Link to="/" onClick={() => onViewChange('board')} className="btn-press flex min-w-0 items-center gap-2" aria-label={t.brand.name}>
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
-              <Trophy size={14} strokeWidth={2.4} />
+      <div className="mx-auto w-full max-w-5xl px-3 sm:px-4">
+        <div className="flex h-14 items-center justify-between gap-1 sm:gap-2">
+          <Link to="/" onClick={() => onViewChange('board')} className="btn-press flex min-w-0 items-center gap-1.5 sm:gap-2" aria-label={t.brand.name}>
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-slate-900 text-white sm:h-7 sm:w-7 dark:bg-white dark:text-slate-900">
+              <Trophy size={13} strokeWidth={2.4} className="sm:hidden" />
+              <Trophy size={14} strokeWidth={2.4} className="hidden sm:block" />
             </span>
-            <span className="truncate text-[15px] font-bold tracking-tight">{t.brand.name}</span>
+            <span className="truncate text-[13px] font-bold tracking-tight min-[400px]:text-sm sm:text-[15px]">{t.brand.name}</span>
           </Link>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
@@ -113,7 +114,7 @@ export function Header({ theme, onToggleTheme, live, configured, view, onViewCha
             <LangToggle lang={lang} setLang={setLang} label={t.lang.label} enLabel={t.lang.en} arLabel={t.lang.ar} />
 
             <span
-              className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400"
+              className="hidden min-[400px]:flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400"
               title={!configured ? t.live.setupTitle : live ? t.live.connectedTitle : t.live.connecting}
             >
               <span

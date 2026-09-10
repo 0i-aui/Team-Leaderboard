@@ -63,6 +63,15 @@ body {
   .dark .label-caps {
     color: #8b93a3;
   }
+  /* Arabic script is cursive — letter-spacing breaks letter connections,
+     so tracking is disabled wherever Arabic is active. */
+  [dir='rtl'] .label-caps,
+  [dir='rtl'] .tracking-wide,
+  [dir='rtl'] .tracking-widest,
+  [dir='rtl'] .tracking-\[0\.06em\],
+  [dir='rtl'] .tracking-\[0\.08em\] {
+    letter-spacing: 0;
+  }
   .btn-press {
     @apply active:scale-95 transition-transform duration-150;
   }

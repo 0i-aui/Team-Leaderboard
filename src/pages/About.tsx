@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { DEVELOPER } from '../lib/developer';
 import { useLanguage } from '../i18n/LanguageContext';
 
 /** One quiet scroll reveal, reused by every section — opacity + 10px, once. */
@@ -27,11 +26,6 @@ export function About() {
     { n: '01', title: t.about.p1t, text: t.about.p1x },
     { n: '02', title: t.about.p2t, text: t.about.p2x },
     { n: '03', title: t.about.p3t, text: t.about.p3x },
-  ];
-  const contacts = [
-    { label: 'GitHub', href: DEVELOPER.github },
-    { label: 'Instagram', href: DEVELOPER.instagram },
-    { label: 'LinkedIn', href: DEVELOPER.linkedin },
   ];
 
   return (
@@ -77,25 +71,6 @@ export function About() {
             </li>
           ))}
         </ol>
-      </Reveal>
-
-      <Reveal label={t.about.devKicker}>
-        <p className="label-caps">{t.about.devKicker}</p>
-        <p className="mt-2 text-[15px] font-bold">{t.footer.credit}</p>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t.about.devText}</p>
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-          {contacts.map((c) => (
-            <a
-              key={c.label}
-              href={c.href}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-press text-sm font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-500 dark:text-slate-300 dark:decoration-slate-600"
-            >
-              {c.label}
-            </a>
-          ))}
-        </div>
       </Reveal>
 
       <div className="mt-8">

@@ -39,11 +39,3 @@ export function timeAgo(iso: string, lang: Lang = 'en'): string {
   if (days < 30) return `${days}d ago`;
   return formatDateTime(iso, lang).date;
 }
-
-export function initials(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return '?';
-  const parts = trimmed.split(/\s+/);
-  if (parts.length === 1) return trimmed.slice(0, 2);
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}

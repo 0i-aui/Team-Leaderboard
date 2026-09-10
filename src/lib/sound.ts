@@ -55,17 +55,27 @@ export function unlockAudio(): void {
   }
 }
 
-/** Attach one-time gesture listeners so the first tap/keypress unlocks audio. */
-export function unlockOnFirstGesture(): void {
+/**
+ * Keep the context unlocked on every user gesture — not just the first.
+ * A context can be re-suspended at any time (backgrounded tab, OS policy),
+ * so one-shot listeners would leave sounds permanently dead afterwards.
+ * These are cheap no-ops when already running.
+ */
+export function unlockOnEveryGesture(): void {
   if (unlockAttached || typeof window === 'undefined') return;
   unlockAttached = true;
   const handler = () => {
     unlockAudio();
-    window.removeEventListener('pointerdown', handler);
-    window.removeEventListener('keydown', handler);
   };
   window.addEventListener('pointerdown', handler, { passive: true });
+  // touchend covers mobile Safari cases where pointerdown alone is unreliable
+  window.addEventListener('touchend', handler, { passive: true });
   window.addEventListener('keydown', handler);
+}
+
+/** @deprecated Use unlockOnEveryGesture instead. Kept for compatibility. */
+export function unlockOnFirstGesture(): void {
+  unlockOnEveryGesture();
 }
 
 export function setSoundEnabled(v: boolean): void {

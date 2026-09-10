@@ -43,6 +43,12 @@ const en = {
     noKey: 'Push notifications are not configured yet.',
     error: 'Something went wrong. Please try again.',
   },
+  nudge: {
+    title: 'Stay updated',
+    body: 'Enable notifications to know when your weekly points change.',
+    hint: 'Tap the 🔔 icon to enable.',
+    dismiss: 'Dismiss',
+  },
   live: {
     live: 'Live',
     connecting: 'Connecting',
@@ -120,8 +126,7 @@ const en = {
     pointsWord: 'Points',
     unknownMember: 'Unknown member',
     emptyTitle: 'No history yet',
-    emptyHint:
-      'Point transactions will appear here. Add points via the add_points() RPC so history stays consistent.',
+    emptyHint: 'Point activity will appear here once the first update is recorded.',
     showMore: 'Show more',
   },
   states: {
@@ -167,8 +172,6 @@ const en = {
     p2x: 'Every point change is an append-only audit record: who added it, how much, and why.',
     p3t: 'Instant updates',
     p3x: 'Edits in Supabase stream to every open device via Realtime. No refresh needed.',
-    devKicker: 'Developer',
-    devText: 'Designed and built with care — minimal, subtle, and premium, inspired by Apple.',
     back: 'Back to leaderboard',
   },
   footer: {
@@ -224,6 +227,12 @@ const ar: Dict = {
     noKey: 'إشعارات الدفع غير مُعدّة بعد.',
     error: 'حدث خطأ ما. حاول مجددًا.',
   },
+  nudge: {
+    title: 'خليك متابع',
+    body: 'فعّل الإشعارات عشان تعرف لما نقاطك الأسبوعية تتحدث.',
+    hint: 'اضغط على أيقونة 🔔 لتفعيلها.',
+    dismiss: 'إغلاق',
+  },
   live: {
     live: 'مباشر',
     connecting: 'جارٍ الاتصال',
@@ -259,11 +268,11 @@ const ar: Dict = {
       `المركز ${rank}: ${name}، ${points} نقطة إجمالاً`,
   },
   roles: {
-    admin: 'ADMIN',
-    mod: 'MOD',
-    supervisor: 'SUPERVISOR',
-    leader: 'LEADER',
-    member: 'MEMBER',
+    admin: 'مسؤول',
+    mod: 'إداري',
+    supervisor: 'مشرف',
+    leader: 'قائد',
+    member: 'عضو',
   },
   zones: {
     safe: 'منطقة الأمان',
@@ -301,8 +310,7 @@ const ar: Dict = {
     pointsWord: 'نقطة',
     unknownMember: 'عضو غير معروف',
     emptyTitle: 'لا يوجد سجل بعد',
-    emptyHint:
-      'ستظهر معاملات النقاط هنا. أضف النقاط عبر دالة add_points() للحفاظ على اتساق السجل.',
+    emptyHint: 'ستظهر نشاطات النقاط هنا بمجرد تسجيل أول تحديث.',
     showMore: 'عرض المزيد',
   },
   states: {
@@ -348,8 +356,6 @@ const ar: Dict = {
     p2x: 'كل تغيير في النقاط سجل تدقيق دائم: من أضافها وكم وما السبب.',
     p3t: 'تحديثات فورية',
     p3x: 'التعديلات في Supabase تصل لكل جهاز مفتوح عبر Realtime. بلا تحديث يدوي.',
-    devKicker: 'المطور',
-    devText: 'صُممت وبُنيت بعناية — بسيطة، هادئة، وراقية، مستوحاة من آبل.',
     back: 'العودة للوحة الصدارة',
   },
   footer: {

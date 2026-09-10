@@ -7,6 +7,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { getZone } from '../utils/rank';
 import { Avatar } from './Avatar';
 import { RoleMarks } from './RoleMarks';
+import { displayName } from '../i18n/names';
 
 const SOURCE_WORD: Record<HistoryEntry['source_key'], 'supervisor' | 'leader' | 'membersSrc' | 'admin' | 'management'> = {
   supervisor: 'supervisor',
@@ -55,7 +56,7 @@ export function PersonSheet({
   return (
     <AnimatePresence>
       {person && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={person.name}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={displayName(person.name, lang)}>
           <motion.button
             type="button"
             aria-label={t.sheet.close}
@@ -86,7 +87,7 @@ export function PersonSheet({
             <div className="flex items-center gap-3">
               <Avatar name={person.name} color={person.avatar_color} />
               <div className="min-w-0">
-                <h3 className="truncate text-lg font-bold tracking-tight">{person.name}</h3>
+                <h3 className="truncate text-lg font-bold tracking-tight">{displayName(person.name, lang)}</h3>
                 <RoleMarks roles={person.roles} />
               </div>
             </div>

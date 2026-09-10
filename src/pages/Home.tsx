@@ -11,6 +11,7 @@ import { LoadingList, EmptyState, ErrorState } from '../components/States';
 import type { MainView } from '../components/Header';
 import { useRankDelta } from '../hooks/useRankDelta';
 import { useLanguage } from '../i18n/LanguageContext';
+import { displayName } from '../i18n/names';
 import { sounds } from '../lib/sound';
 import { getZone, pointLabels, rankPeople, SAFE_CUTOFF, type Zone } from '../utils/rank';
 import type { HistoryEntry, HistoryFilter, Person } from '../types';
@@ -63,7 +64,7 @@ function inRange(iso: string, range: DateRange): boolean {
 }
 
 export function Home({ people, history, loading, error, configured, view, onViewChange, refetch }: Props) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [query, setQuery] = useState('');
   const [source, setSource] = useState<HistoryFilter>('all');
   const [personId, setPersonId] = useState<string>('all');
@@ -127,9 +128,13 @@ export function Home({ people, history, loading, error, configured, view, onView
     if (!q) return null;
     const needle = q.toLowerCase();
     return people
-      .filter((p) => p.name.toLowerCase().includes(needle))
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(needle) ||
+          displayName(p.name, lang).toLowerCase().includes(needle),
+      )
       .sort((a, b) => b.total_points - a.total_points);
-  }, [people, q]);
+  }, [people, q, lang]);
 
   // History view filters are explicit (source + person + period) and
   // independent of the board search box — no hidden coupling.
@@ -310,10 +315,10 @@ export function Home({ people, history, loading, error, configured, view, onView
             >
               <option value="all">{t.historyView.personAll}</option>
               {[...people]
-                .sort((a, b) => a.name.localeCompare(b.name))
+                .sort((a, b) => displayName(a.name, lang).localeCompare(displayName(b.name, lang)))
                 .map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name}
+                    {displayName(p.name, lang)}
                   </option>
                 ))}
             </select>
