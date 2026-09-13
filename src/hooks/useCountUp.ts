@@ -8,7 +8,10 @@ export function useCountUp(target: number, duration = 700): number {
 
   useEffect(() => {
     const from = shownRef.current;
-    if (from === target) {
+    // Users who prefer reduced motion get instant values — the number
+    // still updates, it just doesn't travel.
+    if (from === target || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      shownRef.current = target;
       setValue(target);
       return;
     }

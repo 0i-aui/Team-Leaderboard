@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { revealTween, revealViewport, riseSoft } from '../utils/motion';
 
 /** One quiet scroll reveal, reused by every section — opacity + 10px, once. */
 function Reveal({ children, label }: { children: ReactNode; label?: string }) {
@@ -10,8 +11,8 @@ function Reveal({ children, label }: { children: ReactNode; label?: string }) {
     <motion.section
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
+      viewport={revealViewport}
+      transition={revealTween}
       aria-label={label}
       className="mt-8 border-t border-slate-200 pt-5 dark:border-white/10"
     >
@@ -32,7 +33,7 @@ export function About() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.25 }}
+      transition={riseSoft}
       className="mx-auto w-full max-w-2xl px-4"
     >
       <p className="label-caps pt-2">{t.about.kicker}</p>

@@ -20,6 +20,23 @@ export type PushStatus =
   | 'active'
   | 'error';
 
+// Minimum gap between registration attempts from this browser. This is
+// abuse friction only (DevTools can bypass it) — the real enforcement
+// is the per-person subscription cap in register_push_subscription.
+const ATTEMPT_COOLDOWN_MS = 15 * 1000;
+const ATTEMPT_KEY = 'tl-push-attempt';
+
+function attemptAllowed(): boolean {
+  try {
+    const last = Number(localStorage.getItem(ATTEMPT_KEY) ?? 0);
+    if (Date.now() - last < ATTEMPT_COOLDOWN_MS) return false;
+    localStorage.setItem(ATTEMPT_KEY, String(Date.now()));
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Push subscription state machine. Permission is only ever requested
  * inside the explicit enable() click handler — never on load.
@@ -69,6 +86,7 @@ export function usePush() {
   const enable = useCallback(
     async (personId: string) => {
       if (!supported || !configured || !personId) return;
+      if (!attemptAllowed()) return;
       setStatus('busy');
       try {
         // 1. Permission — must run in this click gesture.
@@ -83,18 +101,40 @@ export function usePush() {
             return;
           }
         }
-        // 2. Service worker + push subscription (reuses the existing one
-        // if this browser already subscribed — upsert moves it).
+        // 2. Service worker + push subscription. Reuse the browser's
+        // existing subscription when possible; a stale subscription
+        // (e.g. rotated VAPID key) makes subscribe() throw, in which
+        // case we drop it and subscribe fresh.
         const vapidKey = getVapidPublicKey();
         if (!vapidKey) {
           setStatus('no-key');
           return;
         }
         const reg = await getServiceWorker();
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
-        });
+        let sub = await getBrowserSubscription();
+        if (!sub) {
+          try {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(vapidKey),
+            });
+          } catch (e) {
+            const name = e instanceof Error ? e.name : '';
+            if (name !== 'InvalidStateError' && name !== 'NotAllowedError') throw e;
+            const stale = await getBrowserSubscription();
+            if (stale) {
+              try {
+                await stale.unsubscribe();
+              } catch {
+                /* already dead — subscribe fresh below */
+              }
+            }
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(vapidKey),
+            });
+          }
+        }
         const keys = subscriptionKeys(sub);
         if (!keys) throw new Error('unreadable-keys');
         // 3. Store server-side, keyed to the selected member.

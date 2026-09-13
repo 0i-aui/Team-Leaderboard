@@ -29,6 +29,7 @@ interface WebhookRecord {
   id?: unknown;
   person_id?: unknown;
   points_change?: unknown;
+  created_at?: unknown;
 }
 
 interface WebhookBody {
@@ -48,6 +49,55 @@ function env(name: string): string | undefined {
   return v && v.length > 0 ? v : undefined;
 }
 
+/** Constant-time webhook secret comparison (no early-exit oracle).
+ * Dependency-free on purpose: no @types/node required to typecheck. */
+function secretMatches(provided: string | undefined, expected: string): boolean {
+  if (!provided || provided.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) {
+    diff |= provided.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+// Best-effort per-person throttle for this warm instance (serverless
+// instances are ephemeral, so this complements — not replaces — the
+// push_log idempotency gate: it blunts forged-body fan-out storms while
+// normal weekly traffic (one event per points addition) never trips it.
+const THROTTLE_WINDOW_MS = 5 * 60 * 1000;
+const THROTTLE_MAX_PER_WINDOW = 10;
+const recentSends = new Map<string, number[]>();
+
+function throttled(personId: string): boolean {
+  const now = Date.now();
+  const hits = (recentSends.get(personId) ?? []).filter((t) => now - t < THROTTLE_WINDOW_MS);
+  if (hits.length >= THROTTLE_MAX_PER_WINDOW) {
+    recentSends.set(personId, hits);
+    return true;
+  }
+  hits.push(now);
+  recentSends.set(personId, hits);
+  // Opportunistic cleanup so the map cannot grow without bound.
+  if (recentSends.size > 500) {
+    for (const [k, v] of recentSends) {
+      if (v.length === 0 || now - v[v.length - 1] >= THROTTLE_WINDOW_MS) recentSends.delete(k);
+    }
+  }
+  return false;
+}
+
+/** Replay binding: accept only recently-created history events. */
+const EVENT_MAX_AGE_MS = 30 * 60 * 1000;
+const EVENT_FUTURE_SKEW_MS = 5 * 60 * 1000;
+
+function eventIsFresh(createdAt: unknown): boolean {
+  if (typeof createdAt !== 'string') return true; // absent → don't break delivery
+  const ts = Date.parse(createdAt);
+  if (Number.isNaN(ts)) return true;
+  const age = Date.now() - ts;
+  return age >= -EVENT_FUTURE_SKEW_MS && age <= EVENT_MAX_AGE_MS;
+}
+
 export default async function handler(req: Req, res: Res): Promise<void> {
   if ((req.method ?? 'GET').toUpperCase() !== 'POST') {
     res.status(200).json({ ok: true, service: 'notify-points', usage: 'POST only' });
@@ -56,7 +106,7 @@ export default async function handler(req: Req, res: Res): Promise<void> {
 
   // 1. Authenticate the webhook caller.
   const secret = env('PUSH_WEBHOOK_SECRET');
-  if (!secret || header(req, 'x-push-secret') !== secret) {
+  if (!secret || !secretMatches(header(req, 'x-push-secret'), secret)) {
     res.status(401).json({ ok: false, error: 'unauthorized' });
     return;
   }
@@ -73,6 +123,17 @@ export default async function handler(req: Req, res: Res): Promise<void> {
   const pointsChange = typeof record.points_change === 'number' ? record.points_change : null;
   if (!historyId || !personId || pointsChange == null) {
     res.status(200).json({ ok: true, skipped: 'malformed-record' });
+    return;
+  }
+  // Replay binding: a captured/forged body for an old event is dropped
+  // even if it carries a valid secret.
+  if (!eventIsFresh(record.created_at)) {
+    res.status(200).json({ ok: true, skipped: 'stale-event' });
+    return;
+  }
+  // Per-person throttle (best-effort, complements idempotency).
+  if (throttled(personId)) {
+    res.status(200).json({ ok: true, skipped: 'throttled' });
     return;
   }
   // Weekly updates are additions; deductions stay silent.

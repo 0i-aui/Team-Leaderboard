@@ -28,8 +28,63 @@ export const AR_NAMES: Record<string, string> = {
   Mohreal: 'مهرائيل',
 };
 
-/** Display name for the active language. Falls back to English. */
+/**
+ * Localized nicknames/aliases — presentation layer only.
+ * Canonical database names MUST remain unchanged; matching, search,
+ * ranking and history keep using the canonical member id/name.
+ *
+ * Source of truth lives in the database (`people.name_ar`,
+ * `nickname_en/ar`); the maps below are fallback defaults kept in
+ * sync with supabase/seed.sql for offline/empty states.
+ */
+export const NICKNAMES: Record<string, { en: string; ar: string }> = {
+  'Mohamed El Desouky': { en: 'Turkey', ar: 'تركي' },
+  'Mohamed Sayed Hassan': { en: "Don't Care", ar: 'دونت كير' },
+};
+
+export interface DbDisplayStrings {
+  name: string;
+  name_ar: string | null;
+  nickname_en: string | null;
+  nickname_ar: string | null;
+}
+
+// Runtime overrides from the database, populated by useLeaderboard on
+// every fetch. DB values win; static maps above are the fallback.
+const dbOverrides = new Map<string, DbDisplayStrings>();
+
+/** Register display strings from `people` rows (call on every fetch). */
+export function registerDisplayStrings(rows: DbDisplayStrings[]): void {
+  dbOverrides.clear();
+  for (const r of rows) dbOverrides.set(r.name, r);
+}
+
+function dbNick(canonicalName: string): { en: string; ar: string } | null {
+  const r = dbOverrides.get(canonicalName);
+  if (r && (r.nickname_en || r.nickname_ar)) {
+    return { en: r.nickname_en ?? canonicalName, ar: r.nickname_ar ?? canonicalName };
+  }
+  return null;
+}
+
+function dbAr(canonicalName: string): string | null {
+  return dbOverrides.get(canonicalName)?.name_ar ?? null;
+}
+
+/** Display name for the active language. Nickname wins, then Arabic name, then canonical. */
 export function displayName(canonicalName: string, lang: Lang): string {
-  if (lang === 'ar') return AR_NAMES[canonicalName] ?? canonicalName;
+  const nick = dbNick(canonicalName) ?? NICKNAMES[canonicalName];
+  if (nick) return lang === 'ar' ? nick.ar : nick.en;
+  if (lang === 'ar') return dbAr(canonicalName) ?? AR_NAMES[canonicalName] ?? canonicalName;
   return canonicalName;
+}
+
+/** All searchable strings for a member: canonical + nickname + Arabic name. */
+export function searchNames(canonicalName: string): string[] {
+  const out = [canonicalName];
+  const nick = dbNick(canonicalName) ?? NICKNAMES[canonicalName];
+  if (nick) out.push(nick.en, nick.ar);
+  const ar = dbAr(canonicalName) ?? AR_NAMES[canonicalName];
+  if (ar) out.push(ar);
+  return out;
 }

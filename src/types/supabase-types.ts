@@ -60,9 +60,13 @@ export interface Database {
           created_at: string;
           id: string;
           name: string;
+          name_ar: string | null;
+          nickname_ar: string | null;
+          nickname_en: string | null;
           points_a: number;
           points_b: number;
           roles: string[];
+          team: string;
           updated_at: string;
         };
         Insert: {
@@ -70,9 +74,13 @@ export interface Database {
           created_at?: string;
           id?: string;
           name: string;
+          name_ar?: string | null;
+          nickname_ar?: string | null;
+          nickname_en?: string | null;
           points_a?: number;
           points_b?: number;
           roles?: string[];
+          team: string;
           updated_at?: string;
         };
         Update: {
@@ -80,9 +88,13 @@ export interface Database {
           created_at?: string;
           id?: string;
           name?: string;
+          name_ar?: string | null;
+          nickname_ar?: string | null;
+          nickname_en?: string | null;
           points_a?: number;
           points_b?: number;
           roles?: string[];
+          team?: string;
           updated_at?: string;
         };
         Relationships: [];
@@ -91,32 +103,35 @@ export interface Database {
         Row: {
           created_at: string;
           id: string;
-          new_points: number;
+          new_total: number;
           person_id: string;
           points_change: number;
-          previous_points: number;
+          previous_total: number;
           reason: string | null;
           source_key: string;
+          week_start: string;
         };
         Insert: {
           created_at?: string;
           id?: string;
-          new_points: number;
+          new_total: number;
           person_id: string;
           points_change: number;
-          previous_points: number;
+          previous_total: number;
           reason?: string | null;
           source_key: string;
+          week_start?: string;
         };
         Update: {
           created_at?: string;
           id?: string;
-          new_points?: number;
+          new_total?: number;
           person_id?: string;
           points_change?: number;
-          previous_points?: number;
+          previous_total?: number;
           reason?: string | null;
           source_key?: string;
+          week_start?: string;
         };
         Relationships: [
           {
@@ -126,6 +141,24 @@ export interface Database {
             referencedColumns: ['id'];
           },
         ];
+      };
+      scoring_resets: {
+        Row: {
+          created_at: string;
+          id: string;
+          reason: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          reason?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          reason?: string | null;
+        };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

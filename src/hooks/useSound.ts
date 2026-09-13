@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { setSoundEnabled, unlockAudio, unlockOnEveryGesture } from '../lib/sound';
+import { setSoundEnabled, sounds, unlockAudio, unlockOnEveryGesture } from '../lib/sound';
 
 const KEY = 'team-leaderboard-sound';
 
@@ -37,11 +37,14 @@ export function useSound() {
   }, []);
 
   const toggle = useCallback(() => {
-    // The toggle tap is a gesture — unlock immediately so the new
-    // state takes effect without waiting for the next interaction.
+    const next = !enabled;
+    // Enable synchronously (the tap is a gesture, so resume succeeds),
+    // then play a quiet confirmation blip so users can hear the new state.
+    setSoundEnabled(next);
     unlockAudio();
-    setEnabledState((v) => !v);
-  }, []);
+    setEnabledState(next);
+    if (next) window.setTimeout(() => sounds.tap(), 60);
+  }, [enabled]);
 
   return { enabled, toggle };
 }

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Bell, X } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getVapidPublicKey, isPushSupported } from '../lib/push';
+import { riseSoft } from '../utils/motion';
 
 const DISMISS_KEY = 'team-leaderboard-notify-nudge';
 const SHOW_DELAY_MS = 1500;
@@ -48,7 +49,7 @@ export function NotifyNudge() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={riseSoft}
       role="status"
       aria-label={t.nudge.title}
       className="surface fixed bottom-4 start-4 z-40 max-w-[calc(100vw-2rem)] rounded-2xl p-4 shadow-xl sm:max-w-xs"
@@ -70,7 +71,7 @@ export function NotifyNudge() {
           type="button"
           onClick={dismiss}
           aria-label={t.nudge.dismiss}
-          className="btn-press grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-slate-900/5 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
+          className="btn-press grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-slate-900/5 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
         >
           <X size={15} />
         </button>

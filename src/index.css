@@ -119,6 +119,34 @@ body {
   animation: row-flash-down 1.6s ease-out both;
 }
 
+/* Stock-ticker micro-motion for movement arrows: a subtle 3px nudge
+   that settles — financial dashboard, never casino. */
+@keyframes tick-rise {
+  0% { transform: translateY(2px); opacity: 0.4; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes tick-fall {
+  0% { transform: translateY(-2px); opacity: 0.4; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.tick-up, .tick-down {
+  display: inline-block;
+}
+.tick-up {
+  animation: tick-rise 0.5s ease-out both;
+}
+.tick-down {
+  animation: tick-fall 0.5s ease-out both;
+}
+/* A changed movement value gets one soft emphasis pulse, then rests. */
+.tick {
+  animation: tick-flash 1.2s ease-out both;
+}
+@keyframes tick-flash {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
 /* Visible keyboard focus — single restrained ring */
 :where(a, button, input, select, [tabindex]):focus-visible {
   outline: 2px solid #6366f1;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, BellRing, X } from 'lucide-react';
@@ -6,15 +6,17 @@ import type { Person } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { displayName } from '../i18n/names';
 import { usePush } from '../hooks/usePush';
+import { fadeFast, sheetSpring } from '../utils/motion';
 
 const BTN =
-  'btn-press grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-slate-900/5 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100';
+  'btn-press grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-slate-900/5 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100';
 
 /** Header bell + setup dialog. Permission is only requested from the enable button. */
 export function PushBell({ people }: { people: Person[] }) {
   const { lang, t } = useLanguage();
   const { status, selectedId, setSelectedId, activePersonId, enable, disable } = usePush();
   const [open, setOpen] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   const sorted = useMemo(
     () =>
@@ -30,15 +32,18 @@ export function PushBell({ people }: { people: Person[] }) {
 
   useEffect(() => {
     if (!open) return;
+    const prev = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeRef.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
     document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      prev?.focus({ preventScroll: true });
     };
   }, [open ]);
 
@@ -79,21 +84,22 @@ export function PushBell({ people }: { people: Person[] }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={fadeFast}
             />
             <motion.div
               initial={{ opacity: 0, y: 48, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 32, scale: 0.98 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+              transition={sheetSpring}
               className="surface relative max-h-[86vh] w-full overflow-y-auto rounded-t-3xl p-6 shadow-2xl sm:max-w-md sm:rounded-3xl"
             >
               <span aria-hidden className="mx-auto mb-4 block h-1 w-10 rounded-full bg-slate-300 sm:hidden dark:bg-slate-600" />
               <button
                 type="button"
+                ref={closeRef}
                 onClick={() => setOpen(false)}
                 aria-label={t.sheet.close}
-                className="btn-press absolute end-4 top-4 grid h-9 w-9 place-items-center rounded-full text-slate-400 hover:bg-slate-900/5 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
+                className="btn-press absolute end-4 top-4 grid h-10 w-10 place-items-center rounded-full text-slate-400 hover:bg-slate-900/5 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
               >
                 <X size={17} />
               </button>

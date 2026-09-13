@@ -25,7 +25,7 @@ let master: GainNode | null = null;
 let enabled = true;
 let unlockAttached = false;
 
-const MASTER_GAIN = 0.05;
+const MASTER_GAIN = 0.07;
 
 function ensureCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -73,11 +73,6 @@ export function unlockOnEveryGesture(): void {
   window.addEventListener('keydown', handler);
 }
 
-/** @deprecated Use unlockOnEveryGesture instead. Kept for compatibility. */
-export function unlockOnFirstGesture(): void {
-  unlockOnEveryGesture();
-}
-
 export function setSoundEnabled(v: boolean): void {
   enabled = v;
   if (!v) return;
@@ -85,10 +80,31 @@ export function setSoundEnabled(v: boolean): void {
   unlockAudio();
 }
 
-function tone({ from, to, dur = 0.09, type = 'sine', gain = 1, at = 0 }: ToneOpts): void {
+function tone({ from, to, dur = 0.09, type = 'sine', gain = 1, at = 0 }: ToneOpts, retry = true): void {
   if (!enabled) return;
   const c = ensureCtx();
-  if (!c || !master || c.state !== 'running') return;
+  if (!c || !master) return;
+  // Root-cause fix: the old code dropped the sound whenever the context
+  // wasn't already running (fresh load, backgrounded tab, or an effect
+  // firing outside a user gesture). Now we resume first and play as soon
+  // as the context is ready, with one delayed retry as a safety net.
+  if (c.state !== 'running') {
+    if (!retry) return;
+    try {
+      const p = c.resume();
+      if (p && typeof p.then === 'function') {
+        p.then(() => tone({ from, to, dur, type, gain, at }, false)).catch(() => {});
+        return;
+      }
+    } catch {
+      return;
+    }
+    const stillLocked: string = c.state;
+    if (stillLocked !== 'running') {
+      window.setTimeout(() => tone({ from, to, dur, type, gain, at }, false), 120);
+      return;
+    }
+  }
   try {
     const t0 = c.currentTime + at;
     const osc = c.createOscillator();

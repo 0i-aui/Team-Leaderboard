@@ -101,10 +101,13 @@ export function Header({ theme, onToggleTheme, live, configured, view, onViewCha
               <Trophy size={13} strokeWidth={2.4} className="sm:hidden" />
               <Trophy size={14} strokeWidth={2.4} className="hidden sm:block" />
             </span>
-            <span className="truncate text-[13px] font-bold tracking-tight min-[400px]:text-sm sm:text-[15px]">{t.brand.name}</span>
+            <span className="truncate text-[13px] font-bold tracking-tight min-[400px]:text-sm sm:text-[15px]">
+              <span className="min-[400px]:hidden">{t.brand.short}</span>
+              <span className="hidden min-[400px]:inline">{t.brand.name}</span>
+            </span>
           </Link>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <nav className="hidden items-center gap-0.5 rounded-full border border-slate-200 p-0.5 sm:flex dark:border-white/10" aria-label={t.nav.primary}>
               {segment('board', t.nav.board, !onAbout && view === 'board', () => go('board'), 'nav-pill')}
               {segment('history', t.nav.history, !onAbout && view === 'history', () => go('history'), 'nav-pill')}
@@ -137,7 +140,7 @@ export function Header({ theme, onToggleTheme, live, configured, view, onViewCha
               aria-label={soundOn ? t.sound.off : t.sound.on}
               aria-pressed={soundOn}
               title={soundOn ? t.sound.off : t.sound.on}
-              className="btn-press grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-slate-900/5 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+              className="btn-press grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-slate-900/5 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
             >
               {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
@@ -146,7 +149,7 @@ export function Header({ theme, onToggleTheme, live, configured, view, onViewCha
               type="button"
               onClick={onToggleTheme}
               aria-label={t.theme.toggle}
-              className="btn-press grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full text-slate-500 hover:bg-slate-900/5 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+              className="btn-press grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full text-slate-500 hover:bg-slate-900/5 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
             >
               <motion.span
                 key={theme}

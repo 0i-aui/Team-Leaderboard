@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { PostgrestClient } from '@supabase/postgrest-js';
+import { RealtimeClient } from '@supabase/realtime-js';
 import type { Database } from '../types/supabase-types';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -12,11 +13,30 @@ if (!isSupabaseConfigured) {
   );
 }
 
-export const supabase = createClient<Database>(
-  url ?? 'https://placeholder.supabase.co',
-  anonKey ?? 'placeholder-anon-key',
-  {
-    auth: { persistSession: false, autoRefreshToken: false },
-    realtime: { params: { eventsPerSecond: 10 } },
+const baseUrl = url ?? 'https://placeholder.supabase.co';
+const key = anonKey ?? 'placeholder-anon-key';
+
+// Lean client pairing: PostgREST for queries/RPC + Realtime for live
+// updates. This intentionally bypasses the supabase-js umbrella package
+// (which would also bundle auth/storage/functions clients this read-only,
+// login-free app never uses) while keeping identical call-site APIs and
+// the same auth wiring supabase-js itself uses (anon apikey param).
+const rest = new PostgrestClient<Database>(`${baseUrl}/rest/v1`, {
+  headers: {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
   },
-);
+  schema: 'public',
+});
+
+const realtime = new RealtimeClient(`${baseUrl}/realtime/v1`, {
+  params: { apikey: key, eventsPerSecond: 10 },
+});
+
+/** Drop-in subset of the supabase-js surface this app actually uses. */
+export const supabase = {
+  from: rest.from.bind(rest),
+  rpc: rest.rpc.bind(rest),
+  channel: realtime.channel.bind(realtime),
+  removeChannel: realtime.removeChannel.bind(realtime),
+};

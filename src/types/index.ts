@@ -20,3 +20,12 @@ export interface HistoryEntry extends Omit<HistoryRow, 'source_key'> {
 
 export type HistoryFilter = 'all' | SourceKey;
 export type ThemeMode = 'light' | 'dark';
+export type TeamFilter = 'all' | 'A' | 'B';
+export type ActivityFilter = 'all' | 'points' | 'ranks';
+export type WeekFilter = 'all' | 'this' | 'previous';
+
+export interface ScoringReset {
+  id: string;
+  created_at: string;
+  reason: string | null;
+}

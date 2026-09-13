@@ -1,39 +1,47 @@
 -- ============================================================
--- Team Leaderboard — Seed: the 20 required people (all points 0)
--- Run AFTER schema.sql on a FRESH database.
+-- Team Leaderboard — seed.sql (DEVELOPMENT DATA ONLY)
+-- Applied automatically after `supabase db reset` (migrations first).
+-- Inserts the 20 members with teams, roles, display aliases, and a
+-- clean zero point state. No schema, functions, policies, secrets,
+-- and no First Week point transactions (added separately later).
 -- ============================================================
--- ONE leaderboard, all 20 people. Roles are additive marks
--- (empty = MEMBER). Caps in the schema reject any 21st person
--- and any second admin automatically.
+-- Roles (additive marks, empty = MEMBER):
 --  * Ahmed Sameh ......... {admin, mod}
 --  * Eman ................ {supervisor, leader}
---  * Jana, Abdel Rahman,
---    Mohamed El Desouky .. {supervisor}
+--  * Jana, Habiba, Mohreal, Mohamed Sayed Hassan,
+--    Khaled, Mohamed Ashraf {supervisor}
 --  * Basant .............. {leader}
---  * everyone else ....... {} (displayed MEMBER)
+--  * everyone else ....... {} — incl. Abdel Rahman and
+--    Mohamed El Desouky (MEMBER only)
+-- Teams: exactly 10 in A, 10 in B (enforced by this list; the
+-- `team` column itself guarantees one-team-per-member).
+-- Aliases: canonical `name` never changes; `nickname_*` are display
+-- only (Turkey/تركي, Don't Care/دونت كير). `name_ar` covers all 20.
 
-insert into public.people (name, roles, avatar_color) values
-  ('Islam',                '{leader}',             '#f59e0b'),
-  ('Ahmed Sameh',          '{admin,mod}',          '#6366f1'),
-  ('Ahmed Mohamed',        '{}',                   '#0ea5e9'),
-  ('Thomas',               '{}',                   '#10b981'),
-  ('Jana',                 '{supervisor}',         '#ec4899'),
-  ('Habiba',               '{}',                   '#8b5cf6'),
-  ('Khaled',               '{}',                   '#14b8a6'),
-  ('Zahra',                '{}',                   '#f43f5e'),
-  ('Abdel Rahman',         '{supervisor}',         '#0ea5e9'),
-  ('Fayrouz',              '{}',                   '#f59e0b'),
-  ('Mohamed Ahmed',        '{}',                   '#6366f1'),
-  ('Mohamed Ashraf',       '{}',                   '#10b981'),
-  ('Mohamed El Desouky',   '{supervisor}',         '#f59e0b'),
-  ('Mohamed Sayed Hassan', '{}',                   '#14b8a6'),
-  ('Mohamed Sayed Saleh',  '{}',                   '#8b5cf6'),
-  ('Mohamed Nady',         '{}',                   '#ec4899'),
-  ('Mohreal',              '{}',                   '#0ea5e9'),
-  ('Youssef',              '{}',                   '#10b981'),
-  ('Eman',                 '{supervisor,leader}',  '#ec4899'),
-  ('Basant',               '{leader}',             '#f59e0b');
+insert into public.people (name, team, roles, name_ar, nickname_en, nickname_ar, avatar_color) values
+  ('Islam',                'B', '{}',                  'إسلام',          null,        null,        '#f59e0b'),
+  ('Ahmed Sameh',          'B', '{admin,mod}',         'أحمد سامح',      null,        null,        '#6366f1'),
+  ('Ahmed Mohamed',        'B', '{}',                  'أحمد محمد',      null,        null,        '#0ea5e9'),
+  ('Thomas',               'B', '{}',                  'توماس',          null,        null,        '#10b981'),
+  ('Jana',                 'A', '{supervisor}',        'جنى',            null,        null,        '#ec4899'),
+  ('Habiba',               'A', '{supervisor}',        'حبيبة',          null,        null,        '#8b5cf6'),
+  ('Khaled',               'B', '{supervisor}',        'خالد',           null,        null,        '#14b8a6'),
+  ('Zahra',                'A', '{}',                  'زهرة',           null,        null,        '#f43f5e'),
+  ('Abdel Rahman',         'A', '{}',                  'عبد الرحمن',     null,        null,        '#0ea5e9'),
+  ('Fayrouz',              'A', '{}',                  'فيروز',          null,        null,        '#f59e0b'),
+  ('Mohamed Ahmed',        'B', '{}',                  'محمد أحمد',      null,        null,        '#6366f1'),
+  ('Mohamed Ashraf',       'B', '{supervisor}',        'محمد أشرف',      null,        null,        '#10b981'),
+  ('Mohamed El Desouky',   'A', '{}',                  'محمد الدسوقي',   'Turkey',    'تركي',      '#f59e0b'),
+  ('Mohamed Sayed Hassan', 'A', '{supervisor}',        'محمد سيد حسن',   'Don''t Care','دونت كير', '#14b8a6'),
+  ('Mohamed Sayed Saleh',  'B', '{}',                  'محمد سيد صالح',  null,        null,        '#8b5cf6'),
+  ('Mohamed Nady',         'B', '{}',                  'محمد نادي',      null,        null,        '#ec4899'),
+  ('Mohreal',              'A', '{supervisor}',        'مهرائيل',        null,        null,        '#0ea5e9'),
+  ('Youssef',              'B', '{}',                  'يوسف',           null,        null,        '#10b981'),
+  ('Eman',                 'A', '{supervisor,leader}', 'إيمان',          null,        null,        '#ec4899'),
+  ('Basant',               'A', '{leader}',            'بسنت',           null,        null,        '#f59e0b');
 
--- Verification (expect 20 people; 1 admin; Eman with both marks):
+-- Verification (expect 20 people · 10 per team · all points 0):
 select count(*) as total_people from public.people;
-select name, roles, points_a, points_b from public.people order by name;
+select team, count(*) as n from public.people group by team order by team;
+select count(*) as nonzero_balances from public.people where points_a <> 0 or points_b <> 0;
+select name, team, roles from public.people order by team, name;

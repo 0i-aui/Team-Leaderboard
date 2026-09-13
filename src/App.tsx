@@ -6,6 +6,7 @@ import { Footer } from './components/Footer';
 import { BackToTop } from './components/BackToTop';
 import { NotifyNudge } from './components/NotifyNudge';
 import { useLanguage } from './i18n/LanguageContext';
+import { fadePage } from './utils/motion';
 import { Home } from './pages/Home';
 import { useLeaderboard } from './hooks/useLeaderboard';
 import { useTheme } from './hooks/useTheme';
@@ -36,7 +37,7 @@ function RouteFallback() {
 
 export default function App() {
   const { theme, toggle } = useTheme();
-  const { people, history, loading, error, live, configured, refetch } = useLeaderboard();
+  const { people, history, resetAt, loading, error, live, configured, refetch } = useLeaderboard();
   const location = useLocation();
   const [view, setView] = useState<MainView>('board');
 
@@ -44,6 +45,7 @@ export default function App() {
     <Home
       people={people}
       history={history}
+      resetAt={resetAt}
       loading={loading}
       error={error}
       configured={configured}
@@ -65,7 +67,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={fadePage}
           >
             <Suspense fallback={<RouteFallback />}>
               <Routes location={location}>

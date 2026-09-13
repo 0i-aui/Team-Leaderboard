@@ -9,6 +9,7 @@ import { Avatar } from './Avatar';
 import { RoleMarks } from './RoleMarks';
 import { displayName } from '../i18n/names';
 import type { Lang } from '../i18n/dictionary';
+import { ROW_MOUNT_DELAY_CAP, ROW_MOUNT_DELAY_STEP, rowSpring } from '../utils/motion';
 
 function Total({ value }: { value: number }) {
   const v = useCountUp(value);
@@ -31,14 +32,53 @@ function Name({ name, query, lang }: { name: string; query?: string; lang: Lang 
   );
 }
 
+/**
+ * Stock-market style point movement chip: ↑ +20 / — / ↓ −10.
+ * Values come from the audit log (never invented): 0 renders as "—".
+ */
+export function PointsMove({ value }: { value: number }) {
+  const { t } = useLanguage();
+  if (value === 0) {
+    return <span className="num-tabular text-[11px] font-semibold text-slate-300 dark:text-slate-600">{t.move.noChange}</span>;
+  }
+  const up = value > 0;
+  return (
+    <span
+      className={`tick num-tabular inline-flex items-center gap-0.5 text-[11px] font-bold ${
+        up ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+      }`}
+    >
+      <span aria-hidden className={up ? 'tick-up' : 'tick-down'}>{up ? '↑' : '↓'}</span>
+      {up ? t.move.pointsUp(value) : t.move.pointsDown(Math.abs(value))}
+    </span>
+  );
+}
+
+function RankMove({ value }: { value: number | null | undefined }) {
+  const { t } = useLanguage();
+  if (value == null || value === 0) return null;
+  const up = value > 0;
+  return (
+    <span
+      title={up ? t.move.up(Math.abs(value)) : t.move.down(Math.abs(value))}
+      className={`tick num-tabular text-[10px] font-bold leading-tight ${
+        up ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+      }`}
+    >
+      <span aria-hidden className={up ? 'tick-up' : 'tick-down'}>{up ? '↑' : '↓'}</span>
+      {Math.abs(value)}
+    </span>
+  );
+}
+
 export function PersonRow({
   person,
   rank,
   index,
   zone,
   labels,
-  delta,
-  isNew,
+  pointsMove,
+  rankMove,
   query,
   flash,
   onSelect,
@@ -48,8 +88,8 @@ export function PersonRow({
   index: number;
   zone: Zone;
   labels: { a: string; b: string };
-  delta?: number;
-  isNew?: boolean;
+  pointsMove?: number;
+  rankMove?: number | null;
   query?: string;
   /** Transient highlight right after this row actually changed rank */
   flash?: 'up' | 'down';
@@ -58,6 +98,10 @@ export function PersonRow({
   const { lang, t } = useLanguage();
   const top = rank <= 3;
   const safe = zone === 'safe';
+  const breakdown: { label: string; value: number }[] = [
+    { label: labels.a, value: person.points_a },
+    ...(labels.b ? [{ label: labels.b, value: person.points_b }] : []),
+  ];
   return (
     <motion.button
       layout
@@ -69,8 +113,8 @@ export function PersonRow({
       whileTap={{ scale: 0.995 }}
       transition={{
         duration: 0.25,
-        delay: Math.min(index * 0.03, 0.25),
-        layout: { type: 'spring', stiffness: 350, damping: 34 },
+        delay: Math.min(index * ROW_MOUNT_DELAY_STEP, ROW_MOUNT_DELAY_CAP),
+        layout: rowSpring,
       }}
       aria-label={t.card.personAria(rank, displayName(person.name, lang), person.total_points)}
       className={`rowline row-hover row-press group w-full px-3 py-3 text-start sm:px-4 ${
@@ -87,21 +131,7 @@ export function PersonRow({
           >
             {rank}
           </span>
-          {delta != null && delta !== 0 && (
-            <span
-              title={delta > 0 ? t.move.up(Math.abs(delta)) : t.move.down(Math.abs(delta))}
-              className={`num-tabular text-[10px] font-bold leading-tight ${
-                delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
-              }`}
-            >
-              {delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`}
-            </span>
-          )}
-          {isNew && (
-            <span className="text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-              {t.history.new}
-            </span>
-          )}
+          <RankMove value={rankMove} />
         </span>
 
         <Avatar name={person.name} color={person.avatar_color} size="sm" />
@@ -116,34 +146,31 @@ export function PersonRow({
           </span>
           {/* Mobile breakdown line */}
           <span className="num-tabular mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400 md:hidden">
-            {labels.a} {formatNumber(person.points_a)} · {labels.b} {formatNumber(person.points_b)}
+            {breakdown.map((r) => `${r.label} ${formatNumber(r.value)}`).join(' · ')}
           </span>
         </span>
 
         {/* Desktop breakdown */}
         <span className="hidden shrink-0 items-center gap-5 md:flex">
-          <span className="w-20 text-end">
-            <span className="num-tabular block text-[15px] font-semibold text-slate-800 dark:text-slate-200">
-              {formatNumber(person.points_a)}
+          {breakdown.map((r) => (
+            <span key={r.label} className="w-20 text-end">
+              <span className="num-tabular block text-[15px] font-semibold text-slate-800 dark:text-slate-200">
+                {formatNumber(r.value)}
+              </span>
+              <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                {r.label}
+              </span>
             </span>
-            <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
-              {labels.a}
-            </span>
-          </span>
-          <span className="w-20 text-end">
-            <span className="num-tabular block text-[15px] font-semibold text-slate-800 dark:text-slate-200">
-              {formatNumber(person.points_b)}
-            </span>
-            <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
-              {labels.b}
-            </span>
-          </span>
+          ))}
         </span>
 
-        {/* Total */}
+        {/* Total + point movement */}
         <span className="w-[76px] shrink-0 text-end sm:w-[92px]">
           <span className="num-tabular block text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             <Total value={person.total_points} />
+          </span>
+          <span className="mt-0.5 flex items-center justify-end">
+            <PointsMove value={pointsMove ?? 0} />
           </span>
           <span
             className={`mt-0.5 flex items-center justify-end gap-1 text-[9px] font-bold uppercase tracking-[0.08em] ${
