@@ -6,7 +6,9 @@
 -- Scoring model (enforced here, in the database — never in React):
 --  * normal members / supervisors / leaders ... source 'admin' ONLY,
 --    max 100 gross positive points per week, all into points_a.
---  * Ahmed Sameh (ADMIN mark) ................ 'members' → points_a
+--  * ADMIN-marked people (historical — no active member currently
+--    carries the mark; branches kept so old audit rows still
+--    rebuild correctly) .................. 'members' → points_a
 --    (max 50/week) and 'management' → points_b (max 50/week),
 --    combined max 100/week.
 --  * Week = Monday 00:00 → Sunday 23:59, computed SERVER-side as
@@ -109,7 +111,7 @@ begin
   if p_source_key = 'management' then
     update public.people set points_b = points_b + p_points where id = p_person_id;
   else
-    -- 'admin' (normal members) and 'members' (Ahmed Sameh) → points_a.
+    -- 'admin' (normal members) and 'members' (historical ADMIN mark) → points_a.
     update public.people set points_a = points_a + p_points where id = p_person_id;
   end if;
 

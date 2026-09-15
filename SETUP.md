@@ -7,7 +7,7 @@ Architecture in one line:
 `points_history` is the append-only audit log (source of truth) ·
 `people.points_a / points_b` are cached buckets ·
 `add_points()` RPC updates both atomically + validates source + enforces weekly caps ·
-RLS makes anon read-only · triggers cap the system at 20 people / 1 admin.
+RLS makes anon read-only · triggers cap the system at 19 people.
 
 **Repository SQL is the source of truth.** The database is built from
 `supabase/migrations/` (ordered, reproducible) plus `supabase/seed.sql`
@@ -15,26 +15,27 @@ RLS makes anon read-only · triggers cap the system at 20 people / 1 admin.
 undocumented — if the schema must change, add a migration and re-run
 `supabase db reset` locally first.
 
-Two team leaderboards (Team A / Team B, 10 members each, membership in
-`people.team`), each ranked 1–10 separately. Roles are ADDITIVE marks
+Two team leaderboards (Team A with 10 members / Team B with 9 members,
+membership in `people.team`), each ranked separately. Roles are ADDITIVE marks
 stored in `people.roles` (empty = regular member) — never stored twice,
 never derived from names:
 
 | Marks | points_a | points_b | Total |
 |---|---|---|---|
-| ADMIN (Ahmed Sameh) | Members | Management | Members + Management |
-| everyone else (MEMBER / SUPERVISOR / LEADER) | Admin | — | Admin |
+| everyone (MEMBER / SUPERVISOR / LEADER) | Admin | — | Admin |
 
-Weekly scoring comes from Admin for everyone except Ahmed Sameh, whose
-points split into Members (max 50/week) + Management (max 50/week),
-total max 100/week. Normal members: Admin max 100/week. Caps are
-enforced inside `add_points()` against a server-computed Monday week —
-never in the frontend.
+Weekly scoring comes from Admin for everyone (max 100/week) into a
+single bucket. Caps are enforced inside `add_points()` against a
+server-computed Monday week — never in the frontend. (The `members` /
+`management` sources exist only for the historical ADMIN mark, which no
+active member currently carries.)
 
-Final marks: Ahmed Sameh = ADMIN + MOD · Eman = SUPERVISOR + LEADER ·
-Jana, Habiba, Mohreal, Mohamed Sayed Hassan, Khaled, Mohamed Ashraf =
-SUPERVISOR · Basant = LEADER · everyone else = MEMBER (shown
-automatically when no other marks exist).
+Final marks: Eman = SUPERVISOR + LEADER · Islam, Basant = LEADER ·
+Jana, Khaled, Mohamed Ashraf = SUPERVISOR · everyone else active =
+MEMBER, specifically including Habiba, Mohreal and Mohamed Sayed Hassan
+as MEMBER-only (shown automatically when no other marks exist).
+Ahmed Sameh is deleted from the active roster (no replacement, no point
+transfer).
 
 Zones are computed live from each member's rank inside their own team
 (never stored, never hardcoded):
@@ -64,7 +65,7 @@ supabase db reset   # builds from supabase/migrations/, then runs supabase/seed.
 - `supabase/migrations/0001_core_schema.sql` — tables, indexes, triggers
 - `supabase/migrations/0002_scoring.sql` — `add_points()`, rebuild helper
 - `supabase/migrations/0003_access.sql` — RLS, grants, push-subscription RPCs
-- `supabase/seed.sql` — development data only: the 20 people (teams,
+- `supabase/seed.sql` — development data only: the 19 active people (teams,
   roles, display aliases, zero points). No schema, no secrets, no
   First Week points.
 
@@ -88,17 +89,17 @@ Only these two variables exist. There is intentionally NO
 `SUPABASE_SERVICE_ROLE_KEY` in this project.
 Run locally with `npm install && npm run dev`.
 
-## Step 4 — The 20 people (already seeded, all points 0)
+## Step 4 — The 19 people (already seeded, all points 0)
 
-Team A (10): Eman (`{supervisor,leader}`), Jana, Habiba, Mohreal,
-Mohamed Sayed Hassan (`{supervisor}`), Zahra, Fayrouz, Basant
-(`{leader}`), Mohamed El Desouky, Abdel Rahman (all `{}` = MEMBER
-unless marked).
-Team B (10): Mohamed Ashraf, Khaled (`{supervisor}`), Thomas,
-Mohamed Ahmed, Mohamed Sayed Saleh, Mohamed Nady, Youssef, Islam,
-Ahmed Mohamed (all MEMBER), Ahmed Sameh (`{admin,mod}`).
+Team A (10): Eman (`{supervisor,leader}`), Jana (`{supervisor}`),
+Habiba, Mohreal, Mohamed Sayed Hassan (`{}` = MEMBER), Zahra, Fayrouz,
+Basant (`{leader}`), Mohamed El Desouky, Abdel Rahman (all `{}` =
+MEMBER unless marked).
+Team B (9): Mohamed Ashraf, Khaled (`{supervisor}`), Thomas,
+Mohamed Ahmed, Mohamed Sayed Saleh, Mohamed Nady, Youssef,
+Islam (`{leader}`), Ahmed Mohamed (all MEMBER unless marked).
 
-The database refuses a 21st person, a 2nd admin, an invalid mark,
+The database refuses a 20th person, an invalid mark,
 an invalid team, and any duplicate name (case-insensitive) — all
 enforced by constraints/indexes.
 
@@ -118,12 +119,8 @@ enforces caps — concurrent calls serialize on the person's row lock, so
 limits cannot be raced:
 
 ```sql
--- Normal member/supervisor/leader: Admin source only (max 100/week)
+-- Member/supervisor/leader: Admin source only (max 100/week)
 select public.add_points((select id from people where name='Thomas'), 'admin', 20, 'Great work');
-
--- Ahmed Sameh (ADMIN mark): Members (max 50/week) or Management (max 50/week)
-select public.add_points((select id from people where name='Ahmed Sameh'), 'members', 20, 'Team effort');
-select public.add_points((select id from people where name='Ahmed Sameh'), 'management', 10, 'Decision');
 
 -- Deduct (negative, explicitly supported; floor is 0, never notifies):
 select public.add_points((select id from people where name='Khaled'), 'admin', -5, 'Late submission');
@@ -146,21 +143,22 @@ and movement recalculate automatically.
 | History for one person | `select * from points_history where person_id='<id>' order by created_at desc;` |
 | This week's gains | `select person_id, sum(points_change) from points_history where week_start = date_trunc('week', now())::date and points_change > 0 group by person_id;` |
 | Repair drift | `select rebuild_person_points();` |
-| Verify counts | `select count(*) from people;` → 20 |
+| Verify counts | `select count(*) from people;` → 19 |
 
 ## Step 8 — Zones (automatic, nothing to configure)
 
-- Each team ranks its own 10 members 1–10: ranks 1–5 show SAFE ZONE,
-  ranks 6–10 show RED ZONE.
+- Each team ranks its own members: Team A ranks 1–10, Team B ranks 1–9.
+  Ranks 1–5 show SAFE ZONE, rank 6 and below show RED ZONE.
 - Someone moving #6 → #5 flips RED → SAFE on the next Realtime refresh.
 - Zone = icon + text label + divider + subtle tint (never color alone).
 
 ## Step 9 — Deleting (avoid it)
 
-The system is fixed at 20 people — there is no normal reason to delete.
-If you must: **Table Editor → people → Delete** cascades their history
-(the ONLY case where history disappears). The caps then allow re-adding
-up to the limits.
+The system is fixed at 19 active people — there is no normal reason to
+delete. Ahmed Sameh has already been removed from the active roster
+(see migration 20260915000004; no replacement, no point transfer).
+If you must delete anyone else: **Table Editor → people → Delete**
+cascades their history (the ONLY case where history disappears).
 
 ## Step 10 — Deploy to Vercel
 
@@ -250,14 +248,14 @@ This is read-only — it does not weaken RLS or allow any writes.
 
 ## Verification checklist
 
-- [x] Exactly 20 unique people, no old names, no duplicates (DB-enforced)
-- [x] Team A = 10, Team B = 10, membership stored in `people.team`
-- [x] Ahmed Sameh ADMIN + MOD (Members max 50/week + Management max 50/week)
-- [x] Eman SUPERVISOR + LEADER; Jana, Habiba, Mohreal, Mohamed Sayed Hassan, Khaled, Mohamed Ashraf SUPERVISOR
-- [x] Basant LEADER only; Abdel Rahman + Mohamed El Desouky MEMBER only
-- [x] Everyone else MEMBER; no invented roles
+- [x] Exactly 19 unique active people, no old names, no duplicates (DB-enforced)
+- [x] Team A = 10, Team B = 9, membership stored in `people.team`
+- [x] Ahmed Sameh deleted from the active roster (no replacement, no point transfer)
+- [x] Eman SUPERVISOR + LEADER; Islam, Basant LEADER; Jana, Khaled, Mohamed Ashraf SUPERVISOR
+- [x] Habiba, Mohreal, Mohamed Sayed Hassan MEMBER-only (not supervisors)
+- [x] Everyone else active MEMBER; no invented roles
 - [x] Normal members score from Admin only (max 100/week, DB-enforced)
-- [x] Zones rank-derived per team: 1–5 safe / 6–10 red
+- [x] Zones rank-derived per team: 1–5 safe / 6 and below red
 - [x] History records every transaction with grand totals + week identifier; rank/point movement replayed from the log (never fabricated)
 - [x] Display aliases (Turkey/تركي, Don't Care/دونت كير) seeded in DB; canonical names unchanged
 - [x] Push subscriptions RPC-only and unreadable publicly; no secrets in SQL

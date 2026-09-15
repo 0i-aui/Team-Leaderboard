@@ -7,7 +7,6 @@ import type { Lang } from './dictionary';
  */
 export const AR_NAMES: Record<string, string> = {
   Islam: 'إسلام',
-  'Ahmed Sameh': 'أحمد سامح',
   'Ahmed Mohamed': 'أحمد محمد',
   Eman: 'إيمان',
   Basant: 'بسنت',
@@ -71,12 +70,26 @@ function dbAr(canonicalName: string): string | null {
   return dbOverrides.get(canonicalName)?.name_ar ?? null;
 }
 
-/** Display name for the active language. Nickname wins, then Arabic name, then canonical. */
+/**
+ * Primary display name. ALWAYS the canonical identity, never the nickname:
+ * Arabic UI → Arabic name, English UI → canonical English name.
+ * Nicknames are rendered separately via nicknameFor() (see below).
+ */
 export function displayName(canonicalName: string, lang: Lang): string {
-  const nick = dbNick(canonicalName) ?? NICKNAMES[canonicalName];
-  if (nick) return lang === 'ar' ? nick.ar : nick.en;
   if (lang === 'ar') return dbAr(canonicalName) ?? AR_NAMES[canonicalName] ?? canonicalName;
   return canonicalName;
+}
+
+/**
+ * Nickname for a member in the active language, or null when the member
+ * has none. Render this as SECONDARY metadata next to the canonical name
+ * (e.g. "Mohamed El Desouky" + "Turkey · MEMBER"). Never use it as an
+ * identifier for IDs, queries, history, scoring, teams, or routing.
+ */
+export function nicknameFor(canonicalName: string, lang: Lang): string | null {
+  const nick = dbNick(canonicalName) ?? NICKNAMES[canonicalName];
+  if (!nick) return null;
+  return lang === 'ar' ? nick.ar : nick.en;
 }
 
 /** All searchable strings for a member: canonical + nickname + Arabic name. */

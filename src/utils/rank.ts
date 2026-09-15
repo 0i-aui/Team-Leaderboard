@@ -16,8 +16,22 @@ export function rankBy<T>(rows: T[], value: (row: T) => number): (T & { rank: nu
 }
 
 /**
+ * Team-board ranking: sequential positions 1…N ordered by total points
+ * DESC, ties broken deterministically by canonical name ASC. Used for the
+ * leaderboard display (and therefore zones) so every member always holds
+ * a valid distinct rank — even at 0–0 ties — while history replay keeps
+ * shared-rank semantics in rankBy() untouched.
+ */
+export function rankSequential(rows: Person[]): (Person & { rank: number })[] {
+  return [...rows]
+    .sort((a, b) => b.total_points - a.total_points || a.name.localeCompare(b.name))
+    .map((row, i) => ({ ...row, rank: i + 1 }));
+}
+
+/**
  * Point-category labels, DERIVED from role marks.
- *  * ADMIN mark ......... Members + Management (Ahmed Sameh only)
+ *  * ADMIN mark (historical — no active member currently carries it;
+ *    kept so old audit rows still render) ... Members + Management
  *  * everyone else ...... Admin only (single scoring source)
  */
 export function pointLabels(t: Dict, roles: RoleMark[]): { a: string; b: string } {

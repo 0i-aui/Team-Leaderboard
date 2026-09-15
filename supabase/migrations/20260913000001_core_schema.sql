@@ -5,7 +5,7 @@
 -- (those live in 0002/0003). Data lives in supabase/seed.sql.
 -- ============================================================
 -- Model:
---  * people ......... the 20 members. Canonical English `name` is the
+--  * people ......... the 19 active members. Canonical English `name` is the
 --    stable human identity; all relationships use `id` (never names).
 --    `team` ('A'/'B') is stored here — the database owns membership.
 --    Display strings (`name_ar`, `nickname_en/ar`) are nullable
@@ -62,12 +62,12 @@ drop trigger if exists trg_people_updated on public.people;
 create trigger trg_people_updated before update on public.people
 for each row execute function public.touch_updated_at();
 
--- At most 20 people in total.
+-- At most 19 people in total (10 in Team A, 9 in Team B).
 create or replace function public.enforce_people_cap()
 returns trigger language plpgsql as $$
 begin
-  if (select count(*) from public.people) >= 20 then
-    raise exception 'Maximum 20 people allowed in the leaderboard';
+  if (select count(*) from public.people) >= 19 then
+    raise exception 'Maximum 19 people allowed in the leaderboard';
   end if;
   return new;
 end $$;
@@ -79,7 +79,8 @@ for each row execute function public.enforce_people_cap();
 -- ---------- points_history (append-only audit log) ----------
 -- Strict current source vocabulary (validated again by add_points()):
 --  * normal members/supervisors/leaders ... 'admin' only
---  * Ahmed Sameh (ADMIN mark) ............ 'members' | 'management'
+--  * ADMIN-marked people (historical — no active member currently
+--    carries the mark) ................... 'members' | 'management'
 create table public.points_history (
   id uuid primary key default gen_random_uuid(),
   person_id uuid not null references public.people(id) on delete cascade,

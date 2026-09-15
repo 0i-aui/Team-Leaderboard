@@ -7,7 +7,7 @@ import { useCountUp } from '../hooks/useCountUp';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Avatar } from './Avatar';
 import { RoleMarks } from './RoleMarks';
-import { displayName } from '../i18n/names';
+import { displayName, nicknameFor } from '../i18n/names';
 import type { Lang } from '../i18n/dictionary';
 import { ROW_MOUNT_DELAY_CAP, ROW_MOUNT_DELAY_STEP, rowSpring } from '../utils/motion';
 
@@ -98,6 +98,7 @@ export function PersonRow({
   const { lang, t } = useLanguage();
   const top = rank <= 3;
   const safe = zone === 'safe';
+  const nick = nicknameFor(person.name, lang);
   const breakdown: { label: string; value: number }[] = [
     { label: labels.a, value: person.points_a },
     ...(labels.b ? [{ label: labels.b, value: person.points_b }] : []),
@@ -136,12 +137,18 @@ export function PersonRow({
 
         <Avatar name={person.name} color={person.avatar_color} size="sm" />
 
-        {/* Identity */}
+        {/* Identity: canonical name is primary; nickname (if any) is
+            secondary metadata next to the role marks — never a replacement. */}
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-baseline gap-x-2">
             <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               <Name name={person.name} query={query} lang={lang} />
             </span>
+            {nick && (
+              <span className="truncate text-[13px] font-medium text-slate-400 dark:text-slate-500">
+                {nick}
+              </span>
+            )}
             <RoleMarks roles={person.roles} />
           </span>
           {/* Mobile breakdown line */}

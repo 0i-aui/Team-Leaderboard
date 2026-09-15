@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, PlugZap } from 'lucide-react';
 import { SearchBar } from '../components/SearchBar';
 import { StatsBar } from '../components/StatsBar';
@@ -24,7 +24,7 @@ import {
   getZone,
   historyRankMoves,
   pointLabels,
-  rankBy,
+  rankSequential,
   weekStartLocal,
   SAFE_CUTOFF,
   type Zone,
@@ -38,8 +38,20 @@ import type {
   TeamFilter,
   WeekFilter,
 } from '../types';
+import type { TeamId } from '../utils/teams';
 
 const HISTORY_PAGE = 20;
+const BOARD_TEAM_KEY = 'tl-board-team';
+
+function initialBoardTeam(): TeamId {
+  try {
+    const saved = localStorage.getItem(BOARD_TEAM_KEY);
+    if (saved === 'A' || saved === 'B') return saved;
+  } catch {
+    /* private mode — fall through to default */
+  }
+  return 'A';
+}
 
 interface Props {
   people: Person[];
@@ -101,6 +113,49 @@ function TeamHeader({ team, count }: { team: 'A' | 'B'; count: number }) {
   );
 }
 
+/**
+ * Secondary Team A / Team B selector. Mirrors the top navigation's
+ * segmented-pill language (same shape, same sliding indicator, same
+ * motion) so it reads as one product. Full-width on mobile with
+ * comfortable 44px touch targets; no horizontal overflow.
+ */
+function TeamTabs({ value, onChange }: { value: TeamId; onChange: (t: TeamId) => void }) {
+  const { t } = useLanguage();
+  const seg = (active: boolean) =>
+    `btn-press relative min-h-[44px] flex-1 rounded-full px-4 py-2 text-sm font-bold transition-colors sm:flex-none sm:px-8 ${
+      active ? 'text-white dark:text-slate-900' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+    }`;
+  const segment = (id: TeamId, label: string) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => onChange(id)}
+      aria-pressed={value === id}
+      className={seg(value === id)}
+    >
+      {value === id && (
+        <motion.span
+          layoutId="board-team-pill"
+          className="absolute inset-0 rounded-full bg-slate-900 dark:bg-white"
+          transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+          aria-hidden
+        />
+      )}
+      <span className="relative">{label}</span>
+    </button>
+  );
+  return (
+    <div
+      role="group"
+      aria-label={`${t.teams.a} / ${t.teams.b}`}
+      className="flex items-center gap-0.5 rounded-full border border-slate-200 p-1 dark:border-white/10"
+    >
+      {segment('A', t.teams.a)}
+      {segment('B', t.teams.b)}
+    </div>
+  );
+}
+
 export function Home({ people, history, resetAt, loading, error, configured, view, onViewChange, refetch }: Props) {
   const { lang, t } = useLanguage();
   const [query, setQuery] = useState('');
@@ -111,6 +166,26 @@ export function Home({ people, history, resetAt, loading, error, configured, vie
   const [personId, setPersonId] = useState<string>('all');
   const [visibleHistory, setVisibleHistory] = useState(HISTORY_PAGE);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Selected leaderboard team. Persists across visits (default Team A);
+  // only ONE team's board is rendered at a time.
+  const [boardTeam, setBoardTeam] = useState<TeamId>(initialBoardTeam);
+  const boardTopRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(BOARD_TEAM_KEY, boardTeam);
+    } catch {
+      /* private mode — preference just won't persist */
+    }
+  }, [boardTeam]);
+
+  const selectBoardTeam = (next: TeamId) => {
+    setBoardTeam(next);
+    // Bring the newly selected board into view (mobile UX); respect
+    // reduced-motion preferences.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    boardTopRef.current?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  };
 
   // Scoring period starts at the later of: Monday 00:00 or the last reset.
   const periodStart = useMemo(() => {
@@ -127,8 +202,10 @@ export function Home({ people, history, resetAt, loading, error, configured, vie
   const teamBPeople = useMemo(() => people.filter((p) => teamOfPerson(p) === 'B'), [people]);
 
   // Independent per-team ranking: rank 1 = highest INSIDE the team.
-  const rankedA = useMemo(() => rankBy(teamAPeople, (p) => p.total_points), [teamAPeople]);
-  const rankedB = useMemo(() => rankBy(teamBPeople, (p) => p.total_points), [teamBPeople]);
+  // Sequential positions with a deterministic name tie-break, so ranks
+  // stay valid (1…10) and zones stay meaningful even at 0–0 ties.
+  const rankedA = useMemo(() => rankSequential(teamAPeople), [teamAPeople]);
+  const rankedB = useMemo(() => rankSequential(teamBPeople), [teamBPeople]);
 
   // Stock-market movement from the audit log only — never invented.
   const moveA = useMemo(
@@ -371,16 +448,31 @@ export function Home({ people, history, resetAt, loading, error, configured, vie
       )}
     </div>
   ) : (
-    <div className="space-y-6" aria-label={t.nav.board}>
-      <ListMeta shown={people.length} total={people.length} label={t.list.members} />
-      <section className="space-y-3" aria-label={t.teams.teamALabel}>
-        <TeamHeader team="A" count={rankedA.length} />
-        {teamList(rankedA, moveA)}
-      </section>
-      <section className="space-y-3" aria-label={t.teams.teamBLabel}>
-        <TeamHeader team="B" count={rankedB.length} />
-        {teamList(rankedB, moveB)}
-      </section>
+    <div className="space-y-4" aria-label={t.nav.board}>
+      <div ref={boardTopRef} className="scroll-mt-20">
+        <TeamTabs value={boardTeam} onChange={selectBoardTeam} />
+      </div>
+      {(() => {
+        const activeRanked = boardTeam === 'A' ? rankedA : rankedB;
+        const activeMoves = boardTeam === 'A' ? moveA : moveB;
+        return (
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.section
+              key={boardTeam}
+              className="space-y-3"
+              aria-label={boardTeam === 'A' ? t.teams.teamALabel : t.teams.teamBLabel}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <ListMeta shown={activeRanked.length} total={people.length} label={t.list.members} />
+              <TeamHeader team={boardTeam} count={activeRanked.length} />
+              {teamList(activeRanked, activeMoves)}
+            </motion.section>
+          </AnimatePresence>
+        );
+      })()}
     </div>
   );
 

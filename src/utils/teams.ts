@@ -35,7 +35,6 @@ export const TEAM_B: readonly string[] = [
   'Youssef',
   'Islam',
   'Ahmed Mohamed',
-  'Ahmed Sameh',
 ];
 
 const TEAM_OF = new Map<string, TeamId>();

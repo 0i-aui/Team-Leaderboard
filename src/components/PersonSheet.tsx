@@ -7,7 +7,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { getZone } from '../utils/rank';
 import { Avatar } from './Avatar';
 import { RoleMarks } from './RoleMarks';
-import { displayName } from '../i18n/names';
+import { displayName, nicknameFor } from '../i18n/names';
 import { fadeFast, sheetSpring } from '../utils/motion';
 
 const SOURCE_WORD: Record<HistoryEntry['source_key'], 'supervisor' | 'leader' | 'membersSrc' | 'admin' | 'management'> = {
@@ -62,6 +62,7 @@ export function PersonSheet({
   }, [person, onClose]);
 
   const recent = person ? history.filter((h) => h.person_id === person.id).slice(0, 6) : [];
+  const nick = person ? nicknameFor(person.name, lang) : null;
   const rows = person
     ? [{ label: labels.a, value: person.points_a }, ...(labels.b ? [{ label: labels.b, value: person.points_b }] : [])]
     : [];
@@ -103,6 +104,9 @@ export function PersonSheet({
               <Avatar name={person.name} color={person.avatar_color} />
               <div className="min-w-0">
                 <h3 className="truncate text-lg font-bold tracking-tight">{displayName(person.name, lang)}</h3>
+                {nick && (
+                  <p className="truncate text-sm font-medium text-slate-400 dark:text-slate-500">{nick}</p>
+                )}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                   <RoleMarks roles={person.roles} />
                   {teamName && (

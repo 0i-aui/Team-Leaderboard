@@ -188,7 +188,7 @@ const en = {
     lede: 'Team Leaderboard is a private, read-only scoreboard for the team. Members open it, see the rankings, check points, and understand performance — nothing more, nothing less.',
     whatTitle: 'What this platform is',
     whatBody:
-      'Two live leaderboards — Team A and Team B, ten people each — ranked by Total Points with rank-driven Safe/Red zones inside each team. Role marks — ADMIN, MOD, SUPERVISOR, LEADER, MEMBER — can combine on the same person. Weekly scoring comes from Admin for everyone, except Ahmed Sameh whose points split into Members and Management. Backed by Supabase Postgres with no accounts, no login, and no admin panel: data is managed directly in the database, and the site simply reflects it.',
+      'Two live leaderboards — Team A (10 members) and Team B (9 members) — ranked by Total Points with rank-driven Safe/Red zones inside each team. Role marks — SUPERVISOR, LEADER, MEMBER — can combine on the same person (Eman is SUPERVISOR + LEADER). Weekly scoring comes from Admin for everyone into a single bucket. Backed by Supabase Postgres with no accounts, no login, and no admin panel: data is managed directly in the database, and the site simply reflects it.',
     missionTitle: 'Mission',
     missionText:
       'Make recognition transparent and trustworthy. Points are never just a number on a screen — each one carries its source, its reason, and its moment in time, so every member can see exactly how the ranking was earned.',
@@ -399,7 +399,7 @@ const ar: Dict = {
     lede: 'لوحة الصدارة لوحة نتائج خاصة للفريق للقراءة فقط. يفتحها الأعضاء لرؤية الترتيب والتحقق من النقاط وفهم الأداء — لا أكثر ولا أقل.',
     whatTitle: 'ما هي هذه المنصة',
     whatBody:
-      'لوحتا صدارة مباشرتان — الفريق A والفريق B، عشرة أشخاص لكل منهما — مرتبتان حسب إجمالي النقاط مع مناطق أمان/خطر حسب الترتيب داخل كل فريق. شارات الأدوار — ADMIN وMOD وSUPERVISOR وLEADER وMEMBER — يمكن أن تجتمع لنفس الشخص. النقاط الأسبوعية تأتي من الإدارة للجميع، باستثناء أحمد سامح الذي تنقسم نقاطه إلى الأعضاء والإدارة العليا. مدعومة بقاعدة بيانات Supabase بلا حسابات ولا تسجيل دخول ولا لوحة تحكم: تُدار البيانات مباشرة في قاعدة البيانات، والموقع يعكسها ببساطة.',
+      'لوحتا صدارة مباشرتان — الفريق A (10 أعضاء) والفريق B (9 أعضاء) — مرتبتان حسب إجمالي النقاط مع مناطق أمان/خطر حسب الترتيب داخل كل فريق. شارات الأدوار — SUPERVISOR وLEADER وMEMBER — يمكن أن تجتمع لنفس الشخص (إيمان مشرفة وقائدة معًا). النقاط الأسبوعية تأتي من الإدارة للجميع في حزمة واحدة. مدعومة بقاعدة بيانات Supabase بلا حسابات ولا تسجيل دخول ولا لوحة تحكم: تُدار البيانات مباشرة في قاعدة البيانات، والموقع يعكسها ببساطة.',
     missionTitle: 'المهمة',
     missionText:
       'جعل التقدير شفافًا وجديرًا بالثقة. النقاط ليست مجرد رقم على الشاشة — كل نقطة تحمل مصدرها وسببها ولحظتها، ليرى كل عضو كيف تحقق الترتيب.',
