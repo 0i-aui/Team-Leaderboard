@@ -1,5 +1,3 @@
-أكيد. ده README.md جاهز تحطه في GitHub، مكتوب بشكل professional وطبيعي من غير مبالغة:
-
 # 🏆 Team Leaderboard
 
 A modern, real-time leaderboard platform built for managing and tracking team performance, weekly points, rankings, zones, and activity history.
